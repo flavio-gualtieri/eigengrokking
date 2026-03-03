@@ -1,0 +1,9 @@
+MNIST/
+MODULAR/
+backup/
+old_tests/
+gcp_shit/
+runs/
+FashionMNIST/
+__pycache__/
+grokking_job.sh
