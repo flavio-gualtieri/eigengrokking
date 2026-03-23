@@ -1,14 +1,19 @@
-# Data
-data/MNIST/
-data/FashionMNIST/
-
 # Old stuff
-old/
+old_everything/
+
+# Data
+data/FashionMNIST/
+data/MNIST/
+
+# Venv
+grok-env/
+
+# Logs
+logs/
 
 # Runs
 runs/
-runs_hpc/
 
-# Caches
+# Ignore Python cache
 __pycache__/
-*.pyc
+*.py[cod]

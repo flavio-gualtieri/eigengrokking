@@ -8,7 +8,6 @@ class ExperimentConfig:
     # Admin
     run_spectral: bool = True
     test_mode: bool = False  # If True, saves to a TEST subdir and uses a simplified config for quick runs
-    toy: bool = False  # If True, uses a toy MLP architecture for quick runs
 
     # Data
     dataset: str = "MNIST"

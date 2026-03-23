@@ -2,25 +2,18 @@ import math
 import torch
 from configs.registry import LOSSES
 
+
 @torch.no_grad()
-def compute_accuracy(network, dataset, device, N=2000, batch_size=2048, dataset_name: str | None = None,
-                     num_workers: int = 4):
+def compute_accuracy(
+    network,
+    loader,
+    device,
+    N=None,
+    dataset_name: str | None = None
+    ):
     was_training = network.training
     network.eval()
     try:
-        N = min(len(dataset), N)
-        batch_size = min(batch_size, N)
-
-        loader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_workers,
-            pin_memory=(device.type == "cuda"),
-            persistent_workers=(num_workers > 0),
-            prefetch_factor=2 if num_workers > 0 else None,
-        )
-
         correct = torch.zeros((), device=device, dtype=torch.long)
         seen = 0
 
@@ -37,11 +30,12 @@ def compute_accuracy(network, dataset, device, N=2000, batch_size=2048, dataset_
             pred = logits.argmax(dim=1)
 
             bs = labels.size(0)
-            take = min(bs, N - seen)
+            take = bs if N is None else min(bs, N - seen)
 
             correct += (pred[:take] == labels[:take]).sum()
             seen += take
-            if seen >= N:
+
+            if N is not None and seen >= N:
                 break
 
         return (correct.float() / max(seen, 1)).item()
@@ -50,24 +44,17 @@ def compute_accuracy(network, dataset, device, N=2000, batch_size=2048, dataset_
 
 
 @torch.no_grad()
-def compute_loss(network, dataset, loss_function, device, N=2000, batch_size=2048, dataset_name: str | None = None,
-                 num_workers: int = 4):
+def compute_loss(
+    network,
+    loader,
+    loss_function,
+    device,
+    N=None,
+    dataset_name: str | None = None
+    ):
     was_training = network.training
     network.eval()
     try:
-        N = min(len(dataset), N)
-        batch_size = min(batch_size, N)
-
-        loader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_workers,
-            pin_memory=(device.type == "cuda"),
-            persistent_workers=(num_workers > 0),
-            prefetch_factor=2 if num_workers > 0 else None,
-        )
-
         loss_fn = LOSSES[loss_function](reduction="sum")
 
         total = torch.zeros((), device=device, dtype=torch.float32)
@@ -86,7 +73,7 @@ def compute_loss(network, dataset, loss_function, device, N=2000, batch_size=204
             y = network(x)
 
             bs = labels.size(0)
-            take = min(bs, N - seen)
+            take = bs if N is None else min(bs, N - seen)
 
             if loss_function == "CrossEntropy":
                 total += loss_fn(y[:take], labels[:take])
@@ -99,7 +86,7 @@ def compute_loss(network, dataset, loss_function, device, N=2000, batch_size=204
                 raise ValueError(f"Unknown loss_function: {loss_function}")
 
             seen += take
-            if seen >= N:
+            if N is not None and seen >= N:
                 break
 
         return (total / max(seen, 1)).item()

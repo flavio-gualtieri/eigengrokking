@@ -9,8 +9,8 @@
 #SBATCH -t 20:0:0
 #SBATCH --mem-per-cpu=11G
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs_toy/slurm_%A_%a.out
-#SBATCH --error=logs_toy/slurm_%A_%a.err
+#SBATCH --output=logs/slurm_%A_%a.out
+#SBATCH --error=logs/slurm_%A_%a.err
 
 set -euo pipefail
 
@@ -20,10 +20,5 @@ mkdir -p logs_toy
 module load miniforge
 mamba activate /gpfs/scratch/qp252676/globus/grokking/grok-env
 
-echo "Host: $(hostname)"
-echo "Array job: $SLURM_ARRAY_JOB_ID"
-echo "Task id: $SLURM_ARRAY_TASK_ID"
-echo "Assigned GPU: ${SLURM_JOB_GPUS}"
-echo "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}"
-
-python main_toy.py
+export USE_TOY_MLP=1
+python main.py

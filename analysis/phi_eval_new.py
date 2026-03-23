@@ -40,16 +40,11 @@ def mass_above_thresh(density: torch.Tensor, t_grid: torch.Tensor, threshold: fl
 
 
 def pos_neg_ratio(density: torch.Tensor, t_grid: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
-    """
-    Estimate the ratio
-
-        (mass on positive eigenvalues) / (mass on negative eigenvalues)
-
-    i.e.
-        ∫_{t > 0} rho(t) dt  /  ∫_{t < 0} rho(t) dt
-    """
     density = density.reshape(-1)
     t_grid = t_grid.reshape(-1)
+
+    num_range = torch.max(t_grid()) + torch.abs(torch.min(t_grip))
+    dx = num_range / t_grid.size(dim=0)
 
     if density.shape != t_grid.shape:
         raise ValueError("density and t_grid must have the same shape")
@@ -58,14 +53,10 @@ def pos_neg_ratio(density: torch.Tensor, t_grid: torch.Tensor, eps: float = 1e-1
     neg_mask = t_grid < 0
 
     pos_mass = (
-        torch.trapz(density[pos_mask], t_grid[pos_mask])
-        if pos_mask.sum() >= 2
-        else torch.zeros((), dtype=density.dtype, device=density.device)
+        torch.trapz(density[pos_mask], t_grid[pos_mask], dx)
     )
     neg_mass = (
-        torch.trapz(density[neg_mask], t_grid[neg_mask])
-        if neg_mask.sum() >= 2
-        else torch.zeros((), dtype=density.dtype, device=density.device)
+        torch.trapz(density[neg_mask], t_grid[neg_mask], dx)
     )
 
-    return pos_mass / neg_mass.clamp_min(eps)
+    return pos_mass / neg_mass

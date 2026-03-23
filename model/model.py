@@ -66,7 +66,7 @@ def build_mlp(
     return mlp
 
 
-def build_toy_mlp(
+def build_mlp_toy(
         *,
         activation: str,
         initialization_scale: float,

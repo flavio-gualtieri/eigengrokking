@@ -4,9 +4,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import torch
+
+def _add_plotly_prefix(path: Path) -> Path:
+    path = Path(path)
+    return path.with_name(f"PLOTLY_{path.name}")
 
 
 def _as_numpy(x: Any) -> Optional[np.ndarray]:
@@ -19,10 +24,41 @@ def _as_numpy(x: Any) -> Optional[np.ndarray]:
     return np.asarray(x)
 
 
-def _plot_if_valid(ax, x, y, **kwargs) -> None:
+def _is_valid_xy(x: Any, y: Any) -> bool:
     x_np, y_np = _as_numpy(x), _as_numpy(y)
-    if x_np is not None and y_np is not None and len(x_np) and len(x_np) == len(y_np):
-        ax.plot(x_np, y_np, **kwargs)
+    return (
+        x_np is not None
+        and y_np is not None
+        and len(x_np) > 0
+        and len(x_np) == len(y_np)
+    )
+
+
+def _add_trace_if_valid(
+    fig: go.Figure,
+    x: Any,
+    y: Any,
+    *,
+    name: str,
+    row: int = 1,
+    col: int = 1,
+    secondary_y: bool = False,
+    **kwargs,
+) -> None:
+    x_np, y_np = _as_numpy(x), _as_numpy(y)
+    if _is_valid_xy(x_np, y_np):
+        fig.add_trace(
+            go.Scatter(
+                x=x_np,
+                y=y_np,
+                mode="lines",
+                name=name,
+                **kwargs,
+            ),
+            row=row,
+            col=col,
+            secondary_y=secondary_y,
+        )
 
 
 def _build_title(cfg) -> str:
@@ -37,10 +73,18 @@ def _build_title(cfg) -> str:
         f"WD={cfg.weight_decay}"
     )
     return (
-        f"{focus_info}\n"
+        f"{focus_info}<br>"
         f"depth={cfg.depth}, width={cfg.width}, act={cfg.activation}, "
         f"train={train_info}, bs={cfg.batch_size}, steps={cfg.optimization_steps}"
     )
+
+
+def _normalize_html_path(path: Path) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.suffix.lower() != ".html":
+        path = path.with_suffix(".html")
+    return path
 
 
 def _plot_training_with_right_axis_log(
@@ -53,8 +97,7 @@ def _plot_training_with_right_axis_log(
     right_ylabel: str,
     right_legend_label: str,
 ) -> None:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = _add_plotly_prefix(_normalize_html_path(path))
 
     train_steps = history.get("train_steps", [])
     test_steps = history.get("test_steps", [])
@@ -63,43 +106,58 @@ def _plot_training_with_right_axis_log(
     test_accuracies = history.get("test_accuracies", [])
     adv_test_accuracies = history.get("adv_test_accuracies", [])
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    _plot_if_valid(ax, train_steps, train_accuracies, label="train", color="blue")
-    _plot_if_valid(ax, test_steps, test_accuracies, label="test", color="red")
+    _add_trace_if_valid(
+        fig,
+        train_steps,
+        train_accuracies,
+        name="train",
+        line=dict(color="blue"),
+    )
+    _add_trace_if_valid(
+        fig,
+        test_steps,
+        test_accuracies,
+        name="test",
+        line=dict(color="red"),
+    )
 
     if len(adv_test_accuracies) == len(test_steps):
-        _plot_if_valid(
-            ax,
+        _add_trace_if_valid(
+            fig,
             test_steps,
             adv_test_accuracies,
-            label=f"adv test (FGSM ε={cfg.fgsm_epsilon})",
+            name=f"adv test (FGSM ε={cfg.fgsm_epsilon})",
         )
 
-    ax.set_xscale("log")
-    ax.set_xlabel("Optimization Steps (LOG)")
-    ax.set_ylabel("Accuracy")
-
-    ax2 = ax.twinx()
-    _plot_if_valid(
-        ax2,
+    _add_trace_if_valid(
+        fig,
         right_steps,
         right_values,
-        color="purple",
-        linestyle="-",
-        label=right_legend_label,
+        name=right_legend_label,
+        secondary_y=True,
+        line=dict(color="purple"),
     )
-    ax2.set_ylabel(right_ylabel)
 
-    handles1, labels1 = ax.get_legend_handles_labels()
-    handles2, labels2 = ax2.get_legend_handles_labels()
-    if handles1 or handles2:
-        ax.legend(handles1 + handles2, labels1 + labels2, loc="upper right")
+    fig.update_xaxes(
+        title_text="Optimization Steps (LOG)",
+        type="log",
+    )
+    fig.update_yaxes(title_text="Accuracy", secondary_y=False)
+    fig.update_yaxes(title_text=right_ylabel, secondary_y=True)
 
-    ax.set_title(_build_title(cfg), fontsize=10)
+    fig.update_layout(
+        title=_build_title(cfg),
+        template="plotly_white",
+        width=900,
+        height=600,
+        legend=dict(x=1.0, y=1.0, xanchor="right", yanchor="top"),
+        margin=dict(l=60, r=60, t=100, b=60),
+        hovermode="x unified",
+    )
 
-    fig.savefig(path, dpi=200, bbox_inches="tight")
-    plt.close(fig)
+    fig.write_html(path, include_plotlyjs="cdn")
 
 
 def _plot_training_with_right_axis_reg(
@@ -112,8 +170,7 @@ def _plot_training_with_right_axis_reg(
     right_ylabel: str,
     right_legend_label: str,
 ) -> None:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = _add_plotly_prefix(_normalize_html_path(path))
 
     train_steps = history.get("train_steps", [])
     test_steps = history.get("test_steps", [])
@@ -122,62 +179,75 @@ def _plot_training_with_right_axis_reg(
     test_accuracies = history.get("test_accuracies", [])
     adv_test_accuracies = history.get("adv_test_accuracies", [])
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    _plot_if_valid(ax, train_steps, train_accuracies, label="train", color="blue")
-    _plot_if_valid(ax, test_steps, test_accuracies, label="test", color="red")
+    _add_trace_if_valid(
+        fig,
+        train_steps,
+        train_accuracies,
+        name="train",
+        line=dict(color="blue"),
+    )
+    _add_trace_if_valid(
+        fig,
+        test_steps,
+        test_accuracies,
+        name="test",
+        line=dict(color="red"),
+    )
 
     if len(adv_test_accuracies) == len(test_steps):
-        _plot_if_valid(
-            ax,
+        _add_trace_if_valid(
+            fig,
             test_steps,
             adv_test_accuracies,
-            label=f"adv test (FGSM ε={cfg.fgsm_epsilon})",
+            name=f"adv test (FGSM ε={cfg.fgsm_epsilon})",
         )
 
-    ax.set_xlabel("Optimization Steps")
-    ax.set_ylabel("Accuracy")
-
-    ax2 = ax.twinx()
-    _plot_if_valid(
-        ax2,
+    _add_trace_if_valid(
+        fig,
         right_steps,
         right_values,
-        color="purple",
-        linestyle="-",
-        label=right_legend_label,
+        name=right_legend_label,
+        secondary_y=True,
+        line=dict(color="purple"),
     )
-    ax2.set_ylabel(right_ylabel)
 
-    handles1, labels1 = ax.get_legend_handles_labels()
-    handles2, labels2 = ax2.get_legend_handles_labels()
-    if handles1 or handles2:
-        ax.legend(handles1 + handles2, labels1 + labels2, loc="upper right")
+    fig.update_xaxes(
+        title_text="Optimization Steps (LOG)",
+    )
+    fig.update_yaxes(title_text="Accuracy", secondary_y=False)
+    fig.update_yaxes(title_text=right_ylabel, secondary_y=True)
 
-    ax.set_title(_build_title(cfg), fontsize=10)
+    fig.update_layout(
+        title=_build_title(cfg),
+        template="plotly_white",
+        width=900,
+        height=600,
+        legend=dict(x=1.0, y=1.0, xanchor="right", yanchor="top"),
+        margin=dict(l=60, r=60, t=100, b=60),
+        hovermode="x unified",
+    )
 
-    fig.savefig(path, dpi=200, bbox_inches="tight")
-    plt.close(fig)
+    fig.write_html(path, include_plotlyjs="cdn")
 
 
-def save_training_plot_png_log(path: Path, cfg, history: Dict[str, Any]) -> None:
+def save_training_plot_html_log(path: Path, cfg, history: Dict[str, Any]) -> None:
     """
-    Save the original accuracy plot plus right-axis variants.
+    Save interactive accuracy plots plus right-axis variants as HTML.
     Supports both spectral-density metrics and toy-model Hessian metrics.
     """
-    
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = _normalize_html_path(path)
 
-    stem, suffix = path.stem, path.suffix
+    stem = path.stem
     out_dir = path.parent
 
     variants = [
         # Spectral-density-derived quantities
-        ("_mass_gt1", "eig_mass_gt1", "eig_steps", "Mass λ > 1", "Mass λ > 1"),
-        ("_phi_1_moment", "phi_1_moment", "eig_steps", "Phi 1st Moment", "Phi 1st Moment"),
-        ("_phi_2_moment", "phi_2_moment", "eig_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
-        ("_phi_pos_neg_ratio", "phi_pos_neg_ratio", "eig_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
+        ("_mass_gt1", "eig_mass_gt1", "eig_log_steps", "Mass λ > 1", "Mass λ > 1"),
+        ("_phi_1_moment", "phi_1_moment", "eig_log_steps", "Phi 1st Moment", "Phi 1st Moment"),
+        ("_phi_2_moment", "phi_2_moment", "eig_log_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
+        ("_phi_pos_neg_ratio", "phi_pos_neg_ratio", "eig_log_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
 
         # Weight norms
         ("_weight_norms", "norms", "train_steps", "Weight Norms", "Weight Norms"),
@@ -196,36 +266,34 @@ def save_training_plot_png_log(path: Path, cfg, history: Dict[str, Any]) -> None
 
         if not values or not steps or len(values) != len(steps):
             continue
-        
+
         _plot_training_with_right_axis_log(
-            out_dir / f"{stem}{suffix_part}{suffix}",
+            out_dir / f"{stem}{suffix_part}.html",
             cfg,
             history,
-            right_steps=history.get(step_key, []),
-            right_values=history.get(history_key, []),
+            right_steps=steps,
+            right_values=values,
             right_ylabel=ylabel,
             right_legend_label=legend,
         )
 
 
-def save_training_plot_png_reg(path: Path, cfg, history: Dict[str, Any]) -> None:
+def save_training_plot_html_reg(path: Path, cfg, history: Dict[str, Any]) -> None:
     """
-    Save the original accuracy plot plus right-axis variants.
+    Save interactive accuracy plots plus right-axis variants as HTML.
     Supports both spectral-density metrics and toy-model Hessian metrics.
     """
-    
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = _normalize_html_path(path)
 
-    stem, suffix = path.stem, path.suffix
+    stem = path.stem
     out_dir = path.parent
 
     variants = [
         # Spectral-density-derived quantities
-        ("_mass_gt1_REG", "eig_mass_gt1", "eig_steps", "Mass λ > 1", "Mass λ > 1"),
-        ("_phi_1_moment_REG", "phi_1_moment", "eig_steps", "Phi 1st Moment", "Phi 1st Moment"),
-        ("_phi_2_moment_REG", "phi_2_moment", "eig_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
-        ("_phi_pos_neg_ratio_REG", "phi_pos_neg_ratio", "eig_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
+        ("_mass_gt1_REG", "eig_mass_gt1", "eig_log_steps", "Mass λ > 1", "Mass λ > 1"),
+        ("_phi_1_moment_REG", "phi_1_moment", "eig_log_steps", "Phi 1st Moment", "Phi 1st Moment"),
+        ("_phi_2_moment_REG", "phi_2_moment", "eig_log_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
+        ("_phi_pos_neg_ratio_REG", "phi_pos_neg_ratio", "eig_log_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
 
         # Weight norms
         ("_weight_norms_REG", "norms", "train_steps", "Weight Norms", "Weight Norms"),
@@ -244,13 +312,13 @@ def save_training_plot_png_reg(path: Path, cfg, history: Dict[str, Any]) -> None
 
         if not values or not steps or len(values) != len(steps):
             continue
-        
+
         _plot_training_with_right_axis_reg(
-            out_dir / f"{stem}{suffix_part}{suffix}",
+            out_dir / f"{stem}{suffix_part}.html",
             cfg,
             history,
-            right_steps=history.get(step_key, []),
-            right_values=history.get(history_key, []),
+            right_steps=steps,
+            right_values=values,
             right_ylabel=ylabel,
             right_legend_label=legend,
         )
@@ -272,21 +340,21 @@ def _resolve_x_limits(
     return xlim, t_store_np
 
 
-def save_log_spectral_snapshots(
+def save_log_spectral_snapshots_html(
     *,
     spectra_path: Path,
     phi_store: Dict[int, torch.Tensor],
     t_store: Dict[int, torch.Tensor],
-    dpi: int = 200,
     eps: float = 1e-12,
 ) -> None:
     """
-    Saves per-step snapshots of log spectral density:
+    Saves per-step snapshots of log spectral density as interactive HTML:
         x-axis: eigenvalue λ
         y-axis: log φ(λ)
 
     Uses only t_store for x-values.
     """
+    spectra_path = Path(spectra_path)
     spectra_path.mkdir(parents=True, exist_ok=True)
 
     steps = sorted(phi_store)
@@ -313,14 +381,32 @@ def save_log_spectral_snapshots(
         if n == 0:
             continue
 
-        fig, ax = plt.subplots()
-        ax.plot(t_np[:n], phi_log[:n])
-        ax.set_xlabel("Eigenvalue [λ]")
-        ax.set_ylabel("log Density [log φ(λ)]")
-        ax.set_title(f"Log spectral density at step {step}")
-        ax.set_xlim(*xlim)
-        ax.set_ylim(*y_lim)
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=t_np[:n],
+                y=phi_log[:n],
+                mode="lines",
+                name=f"step {step}",
+            )
+        )
 
-        fig.tight_layout()
-        fig.savefig(spectra_path / f"log_spectrum_step_{step}.png", dpi=dpi)
-        plt.close(fig)
+        fig.update_layout(
+            title=f"Log spectral density at step {step}",
+            template="plotly_white",
+            width=850,
+            height=550,
+            hovermode="x unified",
+            margin=dict(l=60, r=30, t=60, b=60),
+        )
+        fig.update_xaxes(title_text="Eigenvalue [λ]", range=[np.log10(xlim[0]), np.log10(xlim[1])] if xlim[0] > 0 else None)
+        fig.update_yaxes(title_text="log Density [log φ(λ)]", range=list(y_lim))
+
+        out_path = _add_plotly_prefix(
+            spectra_path / f"log_spectrum_step_{step}.html"
+        )
+
+        fig.write_html(
+            out_path,
+            include_plotlyjs="cdn",
+        )
