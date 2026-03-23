@@ -1,47 +1,55 @@
 import torch
 from typing import Tuple
 
-def phi_mass_g1(phi: torch.Tensor, t: torch.Tensor, threshold: float = 1.0) -> float:
-    # Ensure 1D
+def phi_mean_var(phi, t):
+    mass = torch.trapz(phi, t)
+    mu = torch.trapz(t * phi, t) / mass
+    var = torch.trapz((t - mu)**2 * phi, t) / mass
+
+    return mu, var
+
+
+def phi_moment(
+        phi: torch.Tensor,
+        t: torch.Tensor,
+        order: int,
+        central: bool = False,
+        eps: float = 1e-12,
+    ) -> torch.Tensor:
     phi = phi.reshape(-1)
     t = t.reshape(-1)
 
-    # Total mass (should be ~1 if phi is normalized, but we normalize anyway)
-    total_mass = torch.trapz(phi, t)
-
-    # Mask region |t| > threshold and integrate only there
-    mask = (t.abs() > threshold)
-    if mask.sum() < 2:
-        # Not enough points to integrate in that region
-        return 0.0
-
-    tail_mass = torch.trapz(phi[mask], t[mask])
-
-    # Safe normalization
-    frac = tail_mass / (total_mass + 1e-12)
-    return float(frac.item())
-
-
-def phi_mean_var(
-        phi_avg: torch.Tensor,
-        t: torch.Tensor,
-        eps: float = 1e-12,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-    if t.ndim != 1 or phi_avg.ndim != 1:
-        raise ValueError("t and phi_avg must be 1D tensors")
-    if t.shape != phi_avg.shape:
-        raise ValueError("t and phi_avg must have the same shape")
-
-    # Grid spacing (assumes roughly uniform spacing)
-    dt = (t[1:] - t[:-1]).mean()
-
     # Total mass
-    mass = (phi_avg.sum() * dt).clamp_min(eps)
+    mass = torch.trapz(phi, t).clamp_min(eps)
 
-    # Mean
-    mu = (t * phi_avg).sum() * dt / mass
+    if central:
+        mu = torch.trapz(t * phi, t) / mass
+        values = (t - mu) ** order
+    else:
+        values = t ** order
 
-    # Variance
-    var = (((t - mu) ** 2) * phi_avg).sum() * dt / mass
+    moment = torch.trapz(values * phi, t) / mass
+    return moment
 
-    return mu, var
+
+def phi_tail_mass(phi, t, threshold=1.0):
+    mask = (t.abs() > threshold).float()
+    tail = torch.trapz(phi * mask, t)
+    total = torch.trapz(phi, t)
+
+    return tail / total
+
+
+def phi_pos_neg_ratio(phi: torch.Tensor, t: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    phi = phi.reshape(-1)
+    t = t.reshape(-1)
+
+    pos_mask = (t > 0).float()
+    neg_mask = (t < 0).float()
+
+    pos_mass = torch.trapz(phi * pos_mask, t)
+    neg_mass = torch.trapz(phi * neg_mask, t)
+
+    print(f"Positive mass: {pos_mass:.4e}, Negative mass: {neg_mass:.4e}")
+
+    return pos_mass / (neg_mass + eps)

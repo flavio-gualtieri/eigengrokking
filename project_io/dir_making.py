@@ -32,12 +32,15 @@ def _identity_dict(cfg) -> Dict[str, Any]:
     }
 
 
-def make_dirs(cfg, test_mode: bool = False):
+def make_dirs(cfg, test_mode: bool = False, toy_mode: bool = False) -> dict[str, Path]:
     out_root = Path(cfg.output_dir)
 
     # ---- TEST MODE ----
     if test_mode:
         out_root = out_root / "TEST"
+
+    if toy_mode:
+        out_root = out_root / "TOY"
 
     id_dict = _identity_dict(cfg)
 

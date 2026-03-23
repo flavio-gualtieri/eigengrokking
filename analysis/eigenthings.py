@@ -11,10 +11,14 @@ def get_params(model: nn.Module) -> list[torch.Tensor]:
     return [p for p in model.parameters() if p.requires_grad]
 
 
-def model_device(model: nn.Module) -> torch.device:
-    try:
-        return next(model.parameters()).device
-    except StopIteration:
+def device() -> torch.device:
+    if torch.cuda.is_available():
+            return torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        print("Using MPS device")
+        return torch.device("mps")
+    else:
+        print("Using CPU device")
         return torch.device("cpu")
 
 
@@ -52,35 +56,18 @@ def default_loss_fn(
         raise ValueError(f"Unknown loss_type='{loss_type}'. Use 'cross_entropy' or 'mse'.")
 
 
-def hvp(
-        model: nn.Module,
-        X: torch.Tensor,
-        y: torch.Tensor,
-        v_flat: torch.Tensor,
-        *,
-        loss_fn: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None,
-        loss_type: str = "cross_entropy",
-    ) -> torch.Tensor:
-    device = model_device(model)
-    params = get_params(model)
-
-    X = X.to(device)
-    y = y.to(device)
-    v_flat = v_flat.to(device)
-    v_list = unpack_vec(v_flat, params)
+def hvp(q):
+    device = device()
+    q = q.to(device)
+    q_list = unpack_vec(q, params)
 
     logits = model(X)
-
-    # FIX: choose a loss function if none was provided
-    if loss_fn is None:
-        loss = default_loss_fn(logits, y, loss_type=loss_type)
-    else:
-        loss = loss_fn(logits, y)
+    loss = loss_fn(logits, y)
 
     grads = torch.autograd.grad(loss, params, create_graph=True)
 
     gv = torch.zeros((), device=device, dtype=loss.dtype)
-    for g, v in zip(grads, v_list):
+    for g, v in zip(grads, q_list):
         gv = gv + (g * v).sum()
 
     Hv = torch.autograd.grad(gv, params, retain_graph=False, create_graph=False)

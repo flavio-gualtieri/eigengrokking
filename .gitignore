@@ -6,5 +6,9 @@ data/FashionMNIST/
 old/
 
 # Runs
-runs_gcp/
-runs_local/
+runs/
+runs_hpc/
+
+# Caches
+__pycache__/
+*.pyc

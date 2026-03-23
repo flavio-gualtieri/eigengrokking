@@ -29,8 +29,6 @@ def build_mlp(
         activation: str,
         initialization_scale: float,
         device: torch.device,
-        dataset: str = "MNIST",
-        modulus: int | None = None,
         input_dim: int = 784,
         output_dim: int = 10
         ) -> nn.Sequential:
@@ -41,14 +39,6 @@ def build_mlp(
 
     if activation not in ACTIVATIONS:
         raise ValueError(f"Unsupported activation function:'{activation}'. Options: {list(ACTIVATIONS.keys())}")
-    
-    # Adjust dimensions for modular arithmetic dataset
-    if dataset == "MODULAR":
-        if modulus is None:
-            raise ValueError("For MODULAR dataset, 'modulus' must be provided.")
-
-        input_dim = 2 * modulus
-        output_dim = modulus
     
     # Retrieve activation from registry
     activation_fn = ACTIVATIONS[activation]
@@ -66,6 +56,41 @@ def build_mlp(
         else:
             layers.append(nn.Linear(width, width))
             layers.append(activation_fn())
+
+    mlp = nn.Sequential(*layers).to(device)
+
+    with torch.no_grad():
+        for p in mlp.parameters():
+            p.data = initialization_scale * p.data
+
+    return mlp
+
+
+def build_toy_mlp(
+        *,
+        activation: str,
+        initialization_scale: float,
+        device: torch.device,
+        input_dim: int = 784,
+        output_dim: int = 10
+        ) -> nn.Sequential:
+    
+    if activation not in ACTIVATIONS:
+        raise ValueError(
+            f"Unsupported activation function: '{activation}'. "
+            f"Options: {list(ACTIVATIONS.keys())}"
+        )
+
+    activation_fn = ACTIVATIONS[activation]
+
+    layers: list[nn.Module] = [
+        nn.Flatten(),
+        nn.Linear(input_dim, 2),
+        activation_fn(),
+        nn.Linear(2, 2),
+        activation_fn(),
+        nn.Linear(2, output_dim),
+    ]
 
     mlp = nn.Sequential(*layers).to(device)
 
