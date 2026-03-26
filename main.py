@@ -18,14 +18,15 @@ from data.data import get_torchvision_data
 from configs.registry import OPTIMIZERS, ACTIVATIONS, LOSSES
 from analysis.phi_eval_new import nth_moment, mass_above_thresh, pos_neg_ratio
 from project_io.dir_making import make_dirs
-from model.model import build_mlp, set_seed
+from model.model import build_mlp, build_mlp_toy, set_seed
 from analysis.eigenthings_new import estimate_density
 from analysis.metrics import compute_accuracy, compute_loss
 from model.adversarial import generate_fgsm_adversarial_examples
+from pyhessian import hessian
 
 from project_io.io_utils import save_checkpoint, save_training_data_npz, training_plot_stem
 
-from project_io.graphing import save_training_plot_png, save_log_spectral_snapshots
+from project_io.graphing import save_log_spectral_snapshots, save_training_plot
 
 
 def _device() -> torch.device:
@@ -70,15 +71,27 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
 
     # Set device and make directories
     device = _device()
-    dirs = make_dirs(cfg, test_mode=cfg.test_mode)
+
+    # Check if TOY run
+    if os.environ.get("USE_TOY_MLP", "0") == "1":
+        dirs = make_dirs(cfg, test_mode=cfg.test_mode, toy_mode=True)
+    else:
+        dirs = make_dirs(cfg, test_mode=cfg.test_mode)
 
     # Build MLP
-    mlp = build_mlp(
-        depth=cfg.depth,
-        width=cfg.width,
-        activation=cfg.activation,
-        initialization_scale=cfg.initialization_scale,
-        device=device,
+    if os.environ.get("USE_TOY_MLP", "0") == "1":
+        mlp = build_mlp_toy(
+            activation=cfg.activation,
+            initialization_scale=cfg.initialization_scale,
+            device=device,
+        )
+    else:
+        mlp = build_mlp(
+            depth=cfg.depth,
+            width=cfg.width,
+            activation=cfg.activation,
+            initialization_scale=cfg.initialization_scale,
+            device=device,
     )
 
     # Enforce valid activation/optimizer/loss/dataset choice
@@ -101,6 +114,23 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
         batch_size=cfg.batch_size,
     )
 
+    # Create loaders for metrics
+    train_eval_loader = torch.utils.data.DataLoader(
+        train_ds,
+        batch_size=cfg.batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=torch.cuda.is_available(),
+    )
+
+    test_loader = torch.utils.data.DataLoader(
+        test_ds,
+        batch_size=cfg.batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=torch.cuda.is_available(),
+    )
+
     # Set number of classes and one-hots for loss computation
     num_classes = 10
     one_hots = torch.eye(num_classes, device=device, dtype=cfg.dtype)
@@ -119,6 +149,14 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
     )
     adv_test_ds = torch.utils.data.TensorDataset(adv_examples, adv_labels)
 
+    adv_test_loader = torch.utils.data.DataLoader(
+        adv_test_ds,
+        batch_size=cfg.batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=torch.cuda.is_available(),
+    )
+
     # History dictionary to store training/test losses, accuracies, norms, etc. for plotting later
     history: Dict[str, List[float]] = {
         "train_losses": [],
@@ -135,9 +173,9 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
 
         "train_steps": [],
         "test_steps": [],
+        "eig_steps": [],
 
         "eig_mass_gt1": [],
-        "eig_log_steps": [],
         "phi_pos_neg_ratio": [],
     
         "phi_1_moment": [],
@@ -184,8 +222,8 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
             # Log metrics
             if ((steps % cfg.log_every == 0) and (steps > 0)) or (steps == 1):
                 # Compute losses, accuracies, norms on train/test/adv_test and store in history
-                tr_loss = compute_loss(mlp, train_ds, cfg.loss_function, device, N=len(train_ds), dataset_name=cfg.dataset)
-                tr_acc = compute_accuracy(mlp, train_ds, device, N=len(train_ds), dataset_name=cfg.dataset)
+                tr_loss = compute_loss(mlp, train_eval_loader, cfg.loss_function, device, N=len(train_ds), dataset_name=cfg.dataset)
+                tr_acc = compute_accuracy(mlp, train_eval_loader, device, N=len(train_ds), dataset_name=cfg.dataset)
                 wn, lwn = _weight_norms(mlp)
 
                 # Update history
@@ -208,15 +246,23 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
                     )
                     adv_test_ds = torch.utils.data.TensorDataset(adv_examples, adv_labels)
 
+                    adv_test_loader = torch.utils.data.DataLoader(
+                        adv_test_ds,
+                        batch_size=cfg.batch_size,
+                        shuffle=False,
+                        num_workers=0,
+                        pin_memory=torch.cuda.is_available(),
+                    )
+
             # Evaluate
             if ((steps % cfg.eval_every == 0) and (steps > 0)) or (steps == 1):
                 try:
                     # Evaluate on clean and adversarial                
-                    test_loss = compute_loss(mlp, test_ds, cfg.loss_function, device, N=len(test_ds), dataset_name=cfg.dataset)
-                    test_acc = compute_accuracy(mlp, test_ds, device, N=len(test_ds), dataset_name=cfg.dataset)
+                    test_loss = compute_loss(mlp, test_loader, cfg.loss_function, device, N=len(test_ds), dataset_name=cfg.dataset)
+                    test_acc = compute_accuracy(mlp, test_loader, device, N=len(test_ds), dataset_name=cfg.dataset)
     
-                    adv_test_loss = compute_loss(mlp, adv_test_ds, cfg.loss_function, device, N=len(adv_test_ds), dataset_name=cfg.dataset)
-                    adv_test_acc = compute_accuracy(mlp, adv_test_ds, device, N=len(adv_test_ds), dataset_name=cfg.dataset)
+                    adv_test_loss = compute_loss(mlp, adv_test_loader, cfg.loss_function, device, N=len(adv_test_ds), dataset_name=cfg.dataset)
+                    adv_test_acc = compute_accuracy(mlp, adv_test_loader, device, N=len(adv_test_ds), dataset_name=cfg.dataset)
 
                     # Update history
                     history["test_losses"].append(test_loss)
@@ -283,7 +329,7 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
                     history["phi_1_moment"].append(_to_float(phi_1_moment))
                     history["phi_2_moment"].append(_to_float(phi_2_moment))
                     history["phi_pos_neg_ratio"].append(_to_float(phi_pos_neg))
-                    history["eig_log_steps"].append(steps)
+                    history["eig_steps"].append(steps)
                 except Exception as e:
                     print(f"Warning: spectral snapshot failed at step {steps}: {e}")
 
@@ -316,7 +362,7 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
     print("adv_test_accuracies:", len(history["adv_test_accuracies"]))
 
     save_training_data_npz(training_data_path, history=history)
-    save_training_plot_png(plot_path, cfg=cfg, history=history)
+    save_training_plot(plot_path, cfg=cfg, history=history)
 
     return history
 
@@ -329,3 +375,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

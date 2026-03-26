@@ -170,7 +170,7 @@ def _plot_training_with_right_axis_reg(
     right_ylabel: str,
     right_legend_label: str,
 ) -> None:
-    path = _add_plotly_prefix(_normalize_html_path(path))
+    path = _add_plotly_prefix(_normalize_html_path(path)) / 'non_log'
 
     train_steps = history.get("train_steps", [])
     test_steps = history.get("test_steps", [])
@@ -244,20 +244,22 @@ def save_training_plot_html_log(path: Path, cfg, history: Dict[str, Any]) -> Non
 
     variants = [
         # Spectral-density-derived quantities
-        ("_mass_gt1", "eig_mass_gt1", "eig_log_steps", "Mass λ > 1", "Mass λ > 1"),
-        ("_phi_1_moment", "phi_1_moment", "eig_log_steps", "Phi 1st Moment", "Phi 1st Moment"),
-        ("_phi_2_moment", "phi_2_moment", "eig_log_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
-        ("_phi_pos_neg_ratio", "phi_pos_neg_ratio", "eig_log_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
+        ("_mass_gt1_nonlog", "eig_mass_gt1", "eig_steps", "Mass λ > 1", "Mass λ > 1"),
+        ("_phi_1_moment_nonlog", "phi_1_moment", "eig_steps", "Phi 1st Moment", "Phi 1st Moment"),
+        ("_phi_2_moment_nonlog", "phi_2_moment", "eig_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
+        ("_phi_pos_neg_ratio_nonlog", "phi_pos_neg_ratio", "eig_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
+        ("_top_eig", "top_eig", "eig_steps", "Top Eigenvalue", "Top Eigenvalue"),
+        ("_trace", "trace", "eig_steps", "Hessian Trace", "Hessian Trace"),
 
         # Weight norms
-        ("_weight_norms", "norms", "train_steps", "Weight Norms", "Weight Norms"),
-        ("_last_layer_weight_norms", "last_layer_norms", "train_steps", "Last Layer Weight Norms", "Last Layer Weight Norms"),
+        ("_weight_norms_nonlog", "norms", "train_steps", "Weight Norms", "Weight Norms"),
+        ("_last_layer_weight_norms_nonlog", "last_layer_norms", "train_steps", "Last Layer Weight Norms", "Last Layer Weight Norms"),
 
         # Toy-model full Hessian summaries
-        ("_hessian_min_eig", "TOY_hessian_min_eig", "TOY_hessian_steps", "Min Hessian Eigenvalue", "Min Hessian Eigenvalue"),
-        ("_hessian_max_eig", "TOY_hessian_max_eig", "TOY_hessian_steps", "Max Hessian Eigenvalue", "Max Hessian Eigenvalue"),
-        ("_hessian_trace", "TOY_hessian_trace", "TOY_hessian_steps", "Hessian Trace", "Hessian Trace"),
-        ("_hessian_spectral_radius", "TOY_hessian_spectral_radius", "TOY_hessian_steps", "Hessian Spectral Radius", "Hessian Spectral Radius"),
+        ("_hessian_min_eig_nonlog", "TOY_hessian_min_eig", "TOY_hessian_steps", "Min Hessian Eigenvalue", "Min Hessian Eigenvalue"),
+        ("_hessian_max_eig_nonlog", "TOY_hessian_max_eig", "TOY_hessian_steps", "Max Hessian Eigenvalue", "Max Hessian Eigenvalue"),
+        ("_hessian_trace_nonlog", "TOY_hessian_trace", "TOY_hessian_steps", "Hessian Trace", "Hessian Trace"),
+        ("_hessian_spectral_radius_nonlog", "TOY_hessian_spectral_radius", "TOY_hessian_steps", "Hessian Spectral Radius", "Hessian Spectral Radius"),
     ]
 
     for suffix_part, history_key, step_key, ylabel, legend in variants:
@@ -283,27 +285,27 @@ def save_training_plot_html_reg(path: Path, cfg, history: Dict[str, Any]) -> Non
     Save interactive accuracy plots plus right-axis variants as HTML.
     Supports both spectral-density metrics and toy-model Hessian metrics.
     """
-    path = _normalize_html_path(path)
+    path = _normalize_html_path(path)  / 'non_log'
 
     stem = path.stem
     out_dir = path.parent
 
     variants = [
         # Spectral-density-derived quantities
-        ("_mass_gt1_REG", "eig_mass_gt1", "eig_log_steps", "Mass λ > 1", "Mass λ > 1"),
-        ("_phi_1_moment_REG", "phi_1_moment", "eig_log_steps", "Phi 1st Moment", "Phi 1st Moment"),
-        ("_phi_2_moment_REG", "phi_2_moment", "eig_log_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
-        ("_phi_pos_neg_ratio_REG", "phi_pos_neg_ratio", "eig_log_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
+        ("_mass_gt1_nonlog", "eig_mass_gt1", "eig_log_steps", "Mass λ > 1", "Mass λ > 1"),
+        ("_phi_1_moment_nonlog", "phi_1_moment", "eig_log_steps", "Phi 1st Moment", "Phi 1st Moment"),
+        ("_phi_2_moment_nonlog", "phi_2_moment", "eig_log_steps", "Phi 2nd Moment", "Phi 2nd Moment"),
+        ("_phi_pos_neg_ratio_nonlog", "phi_pos_neg_ratio", "eig_log_steps", "Phi Pos-Neg Ratio", "Phi Pos-Neg Ratio"),
 
         # Weight norms
-        ("_weight_norms_REG", "norms", "train_steps", "Weight Norms", "Weight Norms"),
-        ("_last_layer_weight_norms_REG", "last_layer_norms", "train_steps", "Last Layer Weight Norms", "Last Layer Weight Norms"),
+        ("_weight_norms_nonlog", "norms", "train_steps", "Weight Norms", "Weight Norms"),
+        ("_last_layer_weight_norms_nonlog", "last_layer_norms", "train_steps", "Last Layer Weight Norms", "Last Layer Weight Norms"),
 
         # Toy-model full Hessian summaries
-        ("_hessian_min_eig_REG", "TOY_hessian_min_eig", "TOY_hessian_steps", "Min Hessian Eigenvalue", "Min Hessian Eigenvalue"),
-        ("_hessian_max_eig_REG", "TOY_hessian_max_eig", "TOY_hessian_steps", "Max Hessian Eigenvalue", "Max Hessian Eigenvalue"),
-        ("_hessian_trace_REG", "TOY_hessian_trace", "TOY_hessian_steps", "Hessian Trace", "Hessian Trace"),
-        ("_hessian_spectral_radius_REG", "TOY_hessian_spectral_radius", "TOY_hessian_steps", "Hessian Spectral Radius", "Hessian Spectral Radius"),
+        ("_hessian_min_eig_nonlog", "TOY_hessian_min_eig", "TOY_hessian_steps", "Min Hessian Eigenvalue", "Min Hessian Eigenvalue"),
+        ("_hessian_max_eig_nonlog", "TOY_hessian_max_eig", "TOY_hessian_steps", "Max Hessian Eigenvalue", "Max Hessian Eigenvalue"),
+        ("_hessian_trace_nonlog", "TOY_hessian_trace", "TOY_hessian_steps", "Hessian Trace", "Hessian Trace"),
+        ("_hessian_spectral_radius_nonlog", "TOY_hessian_spectral_radius", "TOY_hessian_steps", "Hessian Spectral Radius", "Hessian Spectral Radius"),
     ]
 
     for suffix_part, history_key, step_key, ylabel, legend in variants:

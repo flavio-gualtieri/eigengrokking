@@ -43,9 +43,6 @@ def pos_neg_ratio(density: torch.Tensor, t_grid: torch.Tensor, eps: float = 1e-1
     density = density.reshape(-1)
     t_grid = t_grid.reshape(-1)
 
-    num_range = torch.max(t_grid()) + torch.abs(torch.min(t_grip))
-    dx = num_range / t_grid.size(dim=0)
-
     if density.shape != t_grid.shape:
         raise ValueError("density and t_grid must have the same shape")
 
@@ -53,10 +50,10 @@ def pos_neg_ratio(density: torch.Tensor, t_grid: torch.Tensor, eps: float = 1e-1
     neg_mask = t_grid < 0
 
     pos_mass = (
-        torch.trapz(density[pos_mask], t_grid[pos_mask], dx)
+        torch.trapz(density[pos_mask], t_grid[pos_mask])
     )
     neg_mass = (
-        torch.trapz(density[neg_mask], t_grid[neg_mask], dx)
+        torch.trapz(density[neg_mask], t_grid[neg_mask])
     )
 
     return pos_mass / neg_mass

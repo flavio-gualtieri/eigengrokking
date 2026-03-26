@@ -5,9 +5,6 @@ old_everything/
 data/FashionMNIST/
 data/MNIST/
 
-# Venv
-grok-env/
-
 # Logs
 logs/
 
