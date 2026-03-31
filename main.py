@@ -378,7 +378,7 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
 
 
 def main():
-    task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+    """ task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
     if not 0 <= task_id < len(EXPERIMENTS):
         raise IndexError(
@@ -388,7 +388,10 @@ def main():
 
     cfg = EXPERIMENTS[task_id]
     print(f"Running experiment index {task_id}: {cfg}")
-    run_experiment(cfg)
+    run_experiment(cfg) """
+
+    for cfg in EXPERIMENTS:
+        run_experiment(cfg)
 
 
 
