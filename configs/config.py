@@ -11,10 +11,10 @@ class ExperimentConfig:
 
     # Data
     dataset: str = "MNIST"
-    download_directory: str =  "/gpfs/scratch/qp252676/globus/grokking/data"
+    download_directory: str =  "/Users/qp252676/Desktop/code/grokking/flavio/data"
 
-    train_points: int = 100
-    batch_size: int = 100
+    train_points: int = 2000
+    batch_size: int = 300
 
     # Model
     input_dim: int = 784
@@ -34,8 +34,8 @@ class ExperimentConfig:
     optimization_steps: int = 200_000
     optimizer: str = "AdamW"
     lr: float = 1e-3
-    weight_decay: float = 0
-    loss_function: str = "MSE"
+    weight_decay: float = 0.01
+    loss_function: str = "CrossEntropy"
 
     # Adversarial eval
     fgsm_epsilon: float = 0.1

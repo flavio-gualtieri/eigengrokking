@@ -1,32 +1,34 @@
 from __future__ import annotations
 
 import os
+import torch
+import random
+import argparse
+
+import numpy as np
+import matplotlib.pyplot as plt
+
 from pathlib import Path
 from tqdm.auto import tqdm
 from dataclasses import asdict
 from typing import Dict, List, Optional, Any
 
-import torch
-import random
-import argparse
-import numpy as np
-import matplotlib.pyplot as plt
-
-from configs.config import ExperimentConfig
-from configs.experiments import EXPERIMENTS
-from data.data import get_torchvision_data
-from configs.registry import OPTIMIZERS, ACTIVATIONS, LOSSES
-from analysis.phi_eval_new import nth_moment, mass_above_thresh, pos_neg_ratio
-from project_io.dir_making import make_dirs
-from model.model import build_mlp, build_mlp_toy, set_seed
 from analysis.eigenthings_new import estimate_density
 from analysis.metrics import compute_accuracy, compute_loss
+
+from configs.experiments import EXPERIMENTS
+from configs.configs import ExperimentConfig
+from configs.registry import OPTIMIZERS, ACTIVATIONS, LOSSES
+
+from model.model import build_mlp, build_mlp_toy, set_seed
 from model.adversarial import generate_fgsm_adversarial_examples
-from pyhessian import hessian
 
-from project_io.io_utils import save_checkpoint, save_training_data_npz, training_plot_stem
+from utils.graphing import save_log_spectral_snapshots, save_training_plot
+from utils.utils import save_checkpoint, save_training_data_npz, training_plot_stem
 
-from project_io.graphing import save_log_spectral_snapshots, save_training_plot
+from utils.dir_making_new import make_dirs
+from data.data import get_torchvision_data
+from analysis.phi_eval_new import nth_moment, mass_above_thresh, pos_neg_ratio, mirror_asymmetry
 
 
 def _device() -> torch.device:
@@ -321,8 +323,16 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
                     # Run eval on phi
                     phi_mass_gt1 = mass_above_thresh(phi, t_grid, threshold=1.0)
                     phi_1_moment, phi_2_moment = nth_moment(phi, t_grid, n=1), nth_moment(phi, t_grid, n=2)
-                    phi_pos_neg = pos_neg_ratio(phi, t_grid)
+                    phi_pos_neg = mirror_asymmetry(phi, t_grid)
+                    
+                    # Diagnostic: check if spectrum is null
+                    phi_max = phi.max().item()
+                    phi_mean = phi.mean().item()
+                    is_null = (phi_max < 1e-10)
+                    
                     print(f"Step {steps}: mass λ>1: {phi_mass_gt1:.3e}, 1st moment: {phi_1_moment:.3e}, 2nd moment: {phi_2_moment:.3e}, pos-neg ratio: {phi_pos_neg:.3e}")
+                    if is_null:
+                        print(f"WARNING: Spectrum appears null (max={phi_max:.3e}, mean={phi_mean:.3e})")
 
                     # Update history
                     history["eig_mass_gt1"].append(_to_float(phi_mass_gt1))
@@ -369,8 +379,17 @@ def run_experiment(cfg: ExperimentConfig) -> Dict[str, Any]:
 
 def main():
     task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+
+    if not 0 <= task_id < len(EXPERIMENTS):
+        raise IndexError(
+            f"SLURM_ARRAY_TASK_ID={task_id} is out of range for "
+            f"{len(EXPERIMENTS)} experiments"
+        )
+
     cfg = EXPERIMENTS[task_id]
+    print(f"Running experiment index {task_id}: {cfg}")
     run_experiment(cfg)
+
 
 
 if __name__ == "__main__":

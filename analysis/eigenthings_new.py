@@ -1,10 +1,10 @@
 from __future__ import annotations
-from collections.abc import Iterable
 
 import math
 import torch
-from torch import device, nn
-from torchgen import model
+import torch.nn as nn
+
+from collections.abc import Iterable
 
 
 class Eigenthings:
@@ -58,29 +58,32 @@ class Eigenthings:
         q = q.to(self.device)
         q_list = self.unpack_vec(q)
 
-        grads = torch.autograd.grad(self.loss, self.params, create_graph=True)
+        grads = torch.autograd.grad(self.loss, self.params, create_graph=True, allow_unused=True)
 
-        gv = torch.zeros((), device=self.device, dtype=self.loss.dtype)
+        gv = torch.zeros((), device=self.device, dtype=torch.float32)
         for g, v in zip(grads, q_list):
-            gv = gv + (g * v).sum()
+            if g is not None:
+                gv = gv + (g * v).sum()
 
-        Hv = torch.autograd.grad(gv, self.params, retain_graph=True, create_graph=False)
+        Hv = torch.autograd.grad(gv, self.params, retain_graph=True, create_graph=False, allow_unused=True)
 
-        return self.pack_list(Hv)
+        # Handle None gradients by converting to zeros
+        Hv_list = [h if h is not None else torch.zeros_like(p) for h, p in zip(Hv, self.params)]
+        return self.pack_list(Hv_list)
 
 
     def lanczos(self, v0):
-        v0 = torch.as_tensor(v0, dtype=self.params[0].dtype, device=self.device)
+        v0 = torch.as_tensor(v0, dtype=torch.float32, device=self.device)
         n = v0.shape[0]
 
-        q_prev = torch.zeros(n, dtype=v0.dtype, device=self.device)
+        q_prev = torch.zeros(n, dtype=torch.float32, device=self.device)
         q = v0 / torch.linalg.norm(v0)
 
         alpha = []
         beta = []
         Q = [q.clone()]
 
-        beta_prev = torch.tensor(0.0, dtype=v0.dtype, device=self.device)
+        beta_prev = torch.tensor(0.0, dtype=torch.float32, device=self.device)
 
         for _ in range(self.m):
             w = self.hvp(q) - beta_prev * q_prev
@@ -104,7 +107,7 @@ class Eigenthings:
             beta_prev = b
 
         k = len(alpha)
-        T = torch.zeros((k, k), dtype=v0.dtype, device=self.device)
+        T = torch.zeros((k, k), dtype=torch.float32, device=self.device)
         for i in range(k):
             T[i, i] = alpha[i]
             if i < k - 1:
@@ -114,7 +117,7 @@ class Eigenthings:
         Q = torch.stack(Q[:k], dim=1)
 
         alpha = torch.stack(alpha)
-        beta = torch.stack(beta) if beta else torch.empty(0, dtype=v0.dtype, device=self.device)
+        beta = torch.stack(beta) if beta else torch.empty(0, dtype=torch.float32, device=self.device)
 
         return T
 
@@ -132,29 +135,29 @@ class Eigenthings:
 
 
     def density_from_lanczos(self, nodes, weights, t_grid, sigma):
-        density = torch.zeros_like(t_grid, dtype=torch.float32)
+        density = torch.zeros_like(t_grid)
         for lmbda, w in zip(nodes, weights):
-            density += w * self.gaussian_kernel(t_grid, lmbda, sigma)
+            if w.abs() > 1e-14:  # Skip negligibly small weights
+                density += w * self.gaussian_kernel(t_grid, lmbda, sigma)
     
         return density
 
 
-def build_t_grid(sigma, device, points_per_sigma: float = 5.0):
+def build_t_grid(sigma, device, dtype=torch.float32, points_per_sigma: float = 5.0):
     target_dt = sigma / points_per_sigma
     width = 4000.0
     nt = int(width / target_dt) + 1
-    nt = max(200, min(5000, nt))
+    nt = max(200, nt)
 
-    return torch.linspace(-2000, 2000, nt, device=device)
+    return torch.linspace(-2000, 2000, nt, device=device, dtype=dtype)
 
 
 def estimate_density(model, m, k, sigma, loss):
     params = [p for p in model.parameters() if p.requires_grad]
     device = next(model.parameters()).device
-    dtype = params[0].dtype
 
     n = sum(p.numel() for p in params)
-    t_grid = build_t_grid(sigma, device)
+    t_grid = build_t_grid(sigma, device, dtype=torch.float32)
 
     eigen = Eigenthings(
         model=model,
@@ -167,15 +170,29 @@ def estimate_density(model, m, k, sigma, loss):
         loss=loss
         )
 
-    density = torch.zeros_like(t_grid, dtype=dtype)
+    all_nodes = []
+    all_weights = []
 
     for _ in range(k):
-        v = torch.randn(n, device=device, dtype=dtype)
+        v = torch.randn(n, device=device, dtype=torch.float32)
         v /= torch.linalg.norm(v)
-
         nodes, weights = eigen.lanczos_quadrature(v)
+        all_nodes.append(nodes)
+        all_weights.append(weights)
+
+    nodes_cat = torch.cat(all_nodes)
+    lo = nodes_cat.min().item() - 6 * sigma
+    hi = nodes_cat.max().item() + 6 * sigma
+
+    dt = sigma / 5
+    nt = int((hi - lo) / dt) + 1
+    nt = max(200, min(50000, nt))
+
+    t_grid = torch.linspace(lo, hi, nt, device=device, dtype=torch.float32)
+    density = torch.zeros_like(t_grid)
+
+    for nodes, weights in zip(all_nodes, all_weights):
         density += eigen.density_from_lanczos(nodes, weights, t_grid, sigma)
 
     density /= k
-
     return density, t_grid
