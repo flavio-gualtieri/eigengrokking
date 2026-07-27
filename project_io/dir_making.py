@@ -22,7 +22,9 @@ def _slugify(s: str) -> str:
 def _identity_dict(cfg) -> Dict[str, Any]:
     # Minimal "same experiment" definition per your request
     return {
-        "dataset": str(cfg.dataset),
+        "task": str(cfg.task),
+        "depth": int(cfg.depth),
+        "width": int(cfg.width),
         "initialization_scale": float(cfg.initialization_scale),
         "weight_decay": float(cfg.weight_decay),
         "epochs": int(cfg.optimization_steps),
@@ -45,13 +47,15 @@ def make_dirs(cfg, test_mode: bool = False, toy_mode: bool = False) -> dict[str,
     id_dict = _identity_dict(cfg)
 
     # ----- PATH STRUCTURE -----
-    group_parts = [str(cfg.dataset)]
+    group_parts = [str(cfg.task)]
 
     # only include marker when spectral is OFF
     if not getattr(cfg, "run_spectral", False):
         group_parts.append("no_spectrum")
 
     group_parts += [
+        f"depth={cfg.depth}",
+        f"width={cfg.width}",
         f"init={_fmt_float(cfg.initialization_scale)}",
         f"wd={_fmt_float(cfg.weight_decay)}",
     ]

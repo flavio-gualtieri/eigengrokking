@@ -43,7 +43,7 @@ def _build_title(cfg) -> str:
         else f"{cfg.train_points} pts"
     )
     return (
-        f"dataset={cfg.dataset}, alpha={cfg.initialization_scale}, WD={cfg.weight_decay}\n"
+        f"task={cfg.task}, alpha={cfg.initialization_scale}, WD={cfg.weight_decay}\n"
         f"depth={cfg.depth}, width={cfg.width}, act={cfg.activation}, "
         f"train={train_info}, bs={cfg.batch_size}, steps={cfg.optimization_steps}"
     )
@@ -59,6 +59,7 @@ def _plot_training_with_right_axis(
     right_ylabel: str,
     right_legend_label: str,
     log_x: bool,
+    right_stderr: Optional[Sequence] = None,
 ) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,6 +102,25 @@ def _plot_training_with_right_axis(
     )
     ax2.set_ylabel(right_ylabel)
 
+    # Shaded +-1 stderr band (error bars over probes; see analysis/spectral_observables.py)
+    steps_np = _as_numpy(right_steps)
+    values_np = _as_numpy(right_values)
+    stderr_np = _as_numpy(right_stderr)
+    if (
+        stderr_np is not None
+        and steps_np is not None
+        and values_np is not None
+        and len(stderr_np) == len(values_np) == len(steps_np)
+    ):
+        ax2.fill_between(
+            steps_np,
+            values_np - stderr_np,
+            values_np + stderr_np,
+            color="purple",
+            alpha=0.2,
+            linewidth=0,
+        )
+
     handles1, labels1 = ax.get_legend_handles_labels()
     handles2, labels2 = ax2.get_legend_handles_labels()
     if handles1 or handles2:
@@ -122,6 +142,7 @@ def _plot_training_with_right_axis_plotly(
     right_ylabel: str,
     right_legend_label: str,
     log_x: bool,
+    right_stderr: Optional[Sequence] = None,
 ) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -165,9 +186,13 @@ def _plot_training_with_right_axis_plotly(
 
     x_np = _as_numpy(right_steps)
     y_np = _as_numpy(right_values)
+    err_np = _as_numpy(right_stderr)
     if x_np is not None and y_np is not None and len(x_np) == len(y_np) and len(x_np) > 0:
+        error_y = None
+        if err_np is not None and len(err_np) == len(y_np):
+            error_y = dict(type="data", array=err_np, visible=True)
         fig.add_trace(
-            go.Scatter(x=x_np, y=y_np, mode="lines", name=right_legend_label),
+            go.Scatter(x=x_np, y=y_np, mode="lines", name=right_legend_label, error_y=error_y),
             secondary_y=True,
         )
 
@@ -190,21 +215,24 @@ def _plot_training_with_right_axis_plotly(
         fig.write_image(path)
 
 
+# (filename suffix, history key, step key, y-axis label, stderr key or None)
 PLOT_VARIANTS = [
-    ("_mass_gt1", "eig_mass_gt1", "eig_steps", "Mass λ > 1"),
-    ("_phi_1_moment", "phi_1_moment", "eig_steps", "Phi 1st Moment"),
-    ("_phi_2_moment", "phi_2_moment", "eig_steps", "Phi 2nd Moment"),
-    ("_phi_pos_neg_ratio", "phi_pos_neg_ratio", "eig_steps", "Phi Pos-Neg Ratio"),
-    ("_top_eig", "top_eig", "eig_steps", "Top Eigenvalue"),
-    ("_trace", "trace", "eig_steps", "Hessian Trace"),
+    ("_top_eig", "top_eig", "eig_steps", "Top Eigenvalue (λ_max)", "top_eig_stderr"),
+    ("_bulk_edge", "bulk_edge", "eig_steps", "Bulk Edge", "bulk_edge_stderr"),
+    ("_outlier_count", "outlier_count", "eig_steps", "Outlier Count", "outlier_count_stderr"),
+    ("_trace", "trace", "eig_steps", "Hessian Trace", "trace_stderr"),
+    ("_spectral_entropy", "spectral_entropy", "eig_steps", "Spectral Entropy", "spectral_entropy_stderr"),
+    ("_effective_rank", "effective_rank", "eig_steps", "Effective Rank", "effective_rank_stderr"),
+    ("_negative_mass", "negative_mass", "eig_steps", "Negative-Eigenvalue Mass", "negative_mass_stderr"),
+    ("_conditioning", "conditioning", "eig_steps", "Conditioning (λ_max / bulk edge)", "conditioning_stderr"),
 
-    ("_weight_norms", "norms", "train_steps", "Weight Norms"),
-    ("_last_layer_weight_norms", "last_layer_norms", "train_steps", "Last Layer Weight Norms"),
+    ("_weight_norms", "norms", "train_steps", "Weight Norms", None),
+    ("_last_layer_weight_norms", "last_layer_norms", "train_steps", "Last Layer Weight Norms", None),
 
-    ("_hessian_min_eig", "TOY_hessian_min_eig", "TOY_hessian_steps", "Min Hessian Eigenvalue"),
-    ("_hessian_max_eig", "TOY_hessian_max_eig", "TOY_hessian_steps", "Max Hessian Eigenvalue"),
-    ("_hessian_trace", "TOY_hessian_trace", "TOY_hessian_steps", "Hessian Trace"),
-    ("_hessian_spectral_radius", "TOY_hessian_spectral_radius", "TOY_hessian_steps", "Hessian Spectral Radius"),
+    ("_hessian_min_eig", "TOY_hessian_min_eig", "TOY_hessian_steps", "Min Hessian Eigenvalue", None),
+    ("_hessian_max_eig", "TOY_hessian_max_eig", "TOY_hessian_steps", "Max Hessian Eigenvalue", None),
+    ("_hessian_trace", "TOY_hessian_trace", "TOY_hessian_steps", "Hessian Trace", None),
+    ("_hessian_spectral_radius", "TOY_hessian_spectral_radius", "TOY_hessian_steps", "Hessian Spectral Radius", None),
 ]
 
 def save_training_plot(
@@ -228,9 +256,12 @@ def save_training_plot(
     out_dir = path.parent
     suffix_extra = "" if log_x else "_nonlog"
 
-    for suffix_part, history_key, step_key, ylabel in PLOT_VARIANTS:
+    for suffix_part, history_key, step_key, ylabel, stderr_key in PLOT_VARIANTS:
         values = history.get(history_key, [])
         steps = history.get(step_key, [])
+        stderr = history.get(stderr_key, []) if stderr_key else []
+        if len(stderr) != len(values):
+            stderr = None
 
         if not values or not steps or len(values) != len(steps):
             continue
@@ -246,6 +277,7 @@ def save_training_plot(
             right_ylabel=ylabel,
             right_legend_label=ylabel,
             log_x=log_x,
+            right_stderr=stderr,
         )
 
         _plot_training_with_right_axis_plotly(
@@ -257,6 +289,7 @@ def save_training_plot(
             right_ylabel=ylabel,
             right_legend_label=ylabel,
             log_x=log_x,
+            right_stderr=stderr,
         )
 
 
