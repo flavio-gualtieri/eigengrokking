@@ -3,6 +3,7 @@ torch
 torchvision
 numpy
 matplotlib
+plotly
 tqdm
 openai
 scikit-learn

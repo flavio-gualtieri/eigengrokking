@@ -17,9 +17,9 @@ def _fmt_float(x: float) -> str:
 
 
 def _dataset_label(cfg) -> str:
-    if cfg.dataset == "MODULAR":
+    if cfg.task == "MODULAR":
         return f"MODULAR(p={cfg.modulus})"
-    return str(cfg.dataset)
+    return str(cfg.task)
 
 
 def training_plot_stem(cfg) -> str:
