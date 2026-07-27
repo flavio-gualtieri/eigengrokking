@@ -1,6 +1,0 @@
-{
-  "dataset": "MNIST",
-  "depth": 3,
-  "width": 200,
-  "initialization_scale": 8.0
-}

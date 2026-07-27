@@ -176,7 +176,21 @@ def run_experiment(task) -> Dict[str, Any]:
                     for k, v in extra.items():
                         history.setdefault(k, []).append(_to_float(v))
 
-                    # Checkpoint
+                    # Transition-window detection needs both accuracies; skip
+                    # until the first log_every tick has populated last_train_acc.
+                    if last_train_acc is not None:
+                        spectral_schedule.update_gap(steps, last_train_acc, test_acc)
+                except Exception as e:
+                    print(f"Warning: periodic eval failed at step {steps}: {e}")
+
+            # Checkpoint: own cadence (checkpoint_every), own try/except.
+            # Previously shared both with the eval block above, so a
+            # checkpoint disk-write failure could silently skip the gap
+            # update that drives the spectral schedule's grokking-transition
+            # detection -- checkpointing is pure I/O and shouldn't be able to
+            # take eval/spectral state down with it.
+            if ((steps % cfg.checkpoint_every == 0) and (steps > 0)) or (steps == 1):
+                try:
                     ckpt_path = dirs["ckpt"] / f"checkpoint_step{steps}.pt"
                     save_checkpoint(
                         path=ckpt_path,
@@ -186,13 +200,8 @@ def run_experiment(task) -> Dict[str, Any]:
                         history=history,
                         config=cfg,
                     )
-
-                    # Transition-window detection needs both accuracies; skip
-                    # until the first log_every tick has populated last_train_acc.
-                    if last_train_acc is not None:
-                        spectral_schedule.update_gap(steps, last_train_acc, test_acc)
                 except Exception as e:
-                    print(f"Warning: periodic eval/save failed at step {steps}: {e}")
+                    print(f"Warning: checkpoint save failed at step {steps}: {e}")
 
             # Spectral snapshot: geometric early, dense through the grokking
             # transition (see training/spectral_schedule.py).

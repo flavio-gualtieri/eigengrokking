@@ -21,7 +21,7 @@ def _slugify(s: str) -> str:
 
 def _identity_dict(cfg) -> Dict[str, Any]:
     # Minimal "same experiment" definition per your request
-    return {
+    d = {
         "task": str(cfg.task),
         "depth": int(cfg.depth),
         "width": int(cfg.width),
@@ -32,6 +32,11 @@ def _identity_dict(cfg) -> Dict[str, Any]:
         # keep seed so different seeds don't overwrite each other
         "seed": int(cfg.seed),
     }
+    # modulus only means something for MODULAR; without it, e.g. modulus=91
+    # and modulus=97 runs at the same depth/width/wd/seed would collide.
+    if cfg.task == "MODULAR":
+        d["modulus"] = int(cfg.modulus)
+    return d
 
 
 def make_dirs(cfg, test_mode: bool = False, toy_mode: bool = False) -> dict[str, Path]:
@@ -52,6 +57,9 @@ def make_dirs(cfg, test_mode: bool = False, toy_mode: bool = False) -> dict[str,
     # only include marker when spectral is OFF
     if not getattr(cfg, "run_spectral", False):
         group_parts.append("no_spectrum")
+
+    if cfg.task == "MODULAR":
+        group_parts.append(f"modulus={cfg.modulus}")
 
     group_parts += [
         f"depth={cfg.depth}",

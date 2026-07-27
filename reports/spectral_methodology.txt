@@ -109,12 +109,19 @@ distribution that approximates the normalized spectral measure
                    how many eigen-directions have non-negligible curvature
                    magnitude, regardless of sign.
 
-  negative_mass   Exact sum of pooled weights where node < 0 (no KDE
-                   integration error -- this is a direct sum over discrete
-                   probability atoms). Replaces the old mislabeled
-                   `phi_pos_neg_ratio` key, which actually held a mirror-
-                   asymmetry statistic, not a negative-mass or pos/neg-ratio
-                   quantity.
+  negative_mass   Margin-thresholded: sum of pooled weights where
+                   node < -margin_c * |top_eig| (default margin_c=0.05), not
+                   raw node < 0. Validation on a tiny MLP with an exact
+                   reference Hessian (reports/spectral_validation.md) found
+                   the raw-zero threshold needed m>=200 to converge, because
+                   Lanczos produces spurious near-zero negative Ritz values
+                   that a raw threshold wrongly counts as curvature evidence
+                   -- 193 of 1026 exact eigenvalues on that fixture sat in
+                   the now-excluded [-epsilon, 0) noise band. Margin-
+                   thresholded, the same observable converges by m~30-50.
+                   Replaces the old mislabeled `phi_pos_neg_ratio` key, which
+                   actually held a mirror-asymmetry statistic, not a
+                   negative-mass or pos/neg-ratio quantity.
 
   conditioning    top_eig / bulk_edge, a cheap conditioning proxy: how far
                    the extreme eigenvalue sits above the bulk.

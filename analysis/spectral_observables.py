@@ -18,7 +18,7 @@ class SpectralObservables:
     trace: float            # Hutchinson-via-Lanczos estimate of tr(H)
     spectral_entropy: float # Shannon entropy of the |lambda| spectral measure
     effective_rank: float   # exp(spectral_entropy)
-    negative_mass: float    # probability mass at lambda < 0
+    negative_mass: float    # probability mass at lambda < -margin_c * |top_eig| (margin-thresholded)
     conditioning: float     # top_eig / bulk_edge, a conditioning proxy
 
     def as_dict(self) -> dict:
@@ -46,6 +46,7 @@ def compute_spectral_observables(
         n_params: int,
         bulk_mad_multiplier: float = 5.0,
         resolution_frac: float = 0.05,
+        margin_c: float = 0.05,
         eps: float = 1e-12,
     ) -> SpectralObservables:
     """
@@ -59,6 +60,16 @@ def compute_spectral_observables(
     |top_eig|) used both to decide when two outlier nodes are "the same"
     eigenvalue rediscovered by different probes, and as the bin width for the
     entropy histogram.
+
+    `margin_c` sets epsilon = margin_c * |top_eig|, the threshold used by
+    `negative_mass` (below `-epsilon`, not raw `< 0`): Lanczos can produce
+    tiny spurious negative Ritz values right next to a true eigenvalue near
+    zero, and a raw-zero threshold counts that numerical noise as evidence
+    of negative curvature. Shares the same default as `resolution_frac`
+    since both are "a small fraction of the top eigenvalue" length scales,
+    but is a separate knob -- how fine a bin to resolve the spectrum at and
+    how large a margin counts as "genuinely negative" are different
+    judgment calls that could reasonably diverge.
     """
     nodes, weights = _pool_probes(probe_nodes, probe_weights)
     if nodes.size == 0:
@@ -86,8 +97,9 @@ def compute_spectral_observables(
         gaps = np.diff(outlier_nodes) > resolution
         outlier_count = int(gaps.sum() + 1)
 
-    # --- negative-eigenvalue mass (exact, from pooled weights) ---
-    negative_mass = float(weights[nodes < 0].sum())
+    # --- margin-thresholded negative mass: N_eps = P(lambda < -eps), eps = margin_c * |top_eig| ---
+    epsilon = margin_c * abs(top_eig)
+    negative_mass = float(weights[nodes < -epsilon].sum())
 
     # --- spectral entropy / effective rank, over |lambda| ---
     abs_nodes = np.abs(nodes)

@@ -24,6 +24,7 @@ _MODULAR_ADD_DEFAULTS = dict(
     initialization_scale=1.0,
     log_every=100,
     eval_every=100,
+    checkpoint_every=100,  # matches eval_every -- keeps checkpoint cadence unchanged now that it's decoupled
 )
 
 _BASE_EXPERIMENTS = [
