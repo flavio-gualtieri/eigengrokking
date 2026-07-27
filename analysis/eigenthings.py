@@ -17,7 +17,8 @@ class Eigenthings:
               sigma: float,
               params: list[torch.Tensor],
               device: torch.device,
-              loss
+              loss,
+              orthogonalize: bool = True,
     ):
         self.model = model
         self.m = m
@@ -26,6 +27,7 @@ class Eigenthings:
 
         self.device = device
         self.params = params
+        self.orthogonalize = orthogonalize
 
 
     def gaussian_kernel(self, t, center, sigma):
@@ -88,8 +90,9 @@ class Eigenthings:
             a = torch.dot(q, w)
             w = w - a * q
 
-            for qi in Q:
-                w = w - torch.dot(qi, w) * qi
+            if self.orthogonalize:
+                for qi in Q:
+                    w = w - torch.dot(qi, w) * qi
 
             b = torch.linalg.norm(w)
 
