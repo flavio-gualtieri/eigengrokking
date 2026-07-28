@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#SBATCH -J eigengrokking_wd_sweep
+#SBATCH -p sae
+#SBATCH -A pilot_sae_gpu
+#SBATCH --array=0-9
+#SBATCH -n 8
+#SBATCH --cpus-per-gpu=8
+#SBATCH -t 20:0:0
+#SBATCH --mem-per-cpu=11G
+#SBATCH --gres=gpu:1
+#SBATCH --output=logs/slurm_wd%x_%A_%a.out
+#SBATCH --error=logs/slurm_wd%x_%A_%a.err
+
+set -euo pipefail
+
+cd "$SLURM_SUBMIT_DIR"
+mkdir -p logs
+
+module load miniforge
+mamba activate /gpfs/scratch/qp252676/globus/grokking/grok-env
+
+: "${WEIGHT_DECAY:?WEIGHT_DECAY must be set (exported via sbatch --export)}"
+
+echo "Host: $(hostname)"
+echo "weight_decay=${WEIGHT_DECAY} seed=${SLURM_ARRAY_TASK_ID}"
+
+python scripts/run_grok_mod91.py \
+    --weight_decay "${WEIGHT_DECAY}" \
+    --seed "${SLURM_ARRAY_TASK_ID}"
