@@ -6,19 +6,21 @@
 #SBATCH --array=0-9
 #SBATCH -n 8
 #SBATCH --cpus-per-gpu=8
-#SBATCH -t 20:0:0
+#SBATCH -t 0:59:0
 #SBATCH --mem-per-cpu=11G
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/slurm_wd%x_%A_%a.out
 #SBATCH --error=logs/slurm_wd%x_%A_%a.err
 
-set -euo pipefail
+set -eo pipefail
 
 cd "$SLURM_SUBMIT_DIR"
 mkdir -p logs
 
 module load miniforge
-mamba activate /gpfs/scratch/qp252676/globus/grokking/grok-env
+set +u
+mamba activate /gpfs/scratch/qp252676/globus/envs/grok-env
+set -u
 
 : "${WEIGHT_DECAY:?WEIGHT_DECAY must be set (exported via sbatch --export)}"
 
@@ -27,4 +29,5 @@ echo "weight_decay=${WEIGHT_DECAY} seed=${SLURM_ARRAY_TASK_ID}"
 
 python scripts/run_grok_mod91.py \
     --weight_decay "${WEIGHT_DECAY}" \
-    --seed "${SLURM_ARRAY_TASK_ID}"
+    --seed "${SLURM_ARRAY_TASK_ID}" \
+    --optimization_steps 150000

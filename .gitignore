@@ -10,6 +10,13 @@ logs/
 
 # Runs
 runs/
+runs_arch_sweep/
+
+# Checkpoints
+*.pt
+*.pth
+*.ckpt
+checkpoints/
 
 # Ignore Python cache
 __pycache__/
