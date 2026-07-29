@@ -56,10 +56,9 @@ def compute_spectral_observables(
     plotting -- avoids extra smoothing-bandwidth bias in tail-sensitive
     quantities like top_eig and outlier detection.
 
-    `resolution_frac` sets one shared length scale (as a fraction of
-    |top_eig|) used both to decide when two outlier nodes are "the same"
-    eigenvalue rediscovered by different probes, and as the bin width for the
-    entropy histogram.
+    `resolution_frac` sets the length scale (as a fraction of |top_eig|) used
+    to decide when two outlier nodes are "the same" eigenvalue rediscovered
+    by different probes.
 
     `margin_c` sets epsilon = margin_c * |top_eig|, the threshold used by
     `negative_mass` (below `-epsilon`, not raw `< 0`): Lanczos can produce
@@ -102,13 +101,20 @@ def compute_spectral_observables(
     negative_mass = float(weights[nodes < -epsilon].sum())
 
     # --- spectral entropy / effective rank, over |lambda| ---
+    # Closed form off the raw atoms (no binning, so no artificial cap on
+    # effective_rank): treating each of n_params underlying eigenvalues as
+    # carrying ~1/n_params of the mass and reweighting by |theta_j| gives
+    #   S = log(n_params * sum_j w_j|theta_j|) - sum_j w_j|theta_j| log|theta_j| / sum_j w_j|theta_j|
+    # n_params (not the pooled Ritz node count, which scales with m*k and
+    # would make S drift with Lanczos depth/probe count rather than track
+    # the actual spectrum) keeps this comparable across probe/depth settings.
     abs_nodes = np.abs(nodes)
-    abs_max = max(float(abs_nodes.max()), eps)
-    n_bins = max(int(np.ceil(abs_max / resolution)), 1)
-    hist, _ = np.histogram(abs_nodes, bins=n_bins, range=(0.0, abs_max), weights=weights)
-    p = hist / max(hist.sum(), eps)
-    p = p[p > eps]
-    spectral_entropy = float(-np.sum(p * np.log(p)))
+    weighted_abs = weights * abs_nodes
+    z = float(weighted_abs.sum())
+    z_safe = max(z, eps)
+    log_abs = np.log(np.maximum(abs_nodes, eps))
+    cross_term = float(np.sum(weighted_abs * log_abs))
+    spectral_entropy = float(np.log(n_params * z_safe) - cross_term / z_safe)
     effective_rank = float(math.exp(spectral_entropy))
 
     conditioning = float(top_eig / bulk_edge) if abs(bulk_edge) > eps else float("nan")

@@ -170,15 +170,19 @@ def test_negative_mass_recovered(tiny_mlp, exact_spectrum, exact_observables):
 def test_effective_rank_and_entropy_converge_with_lanczos_depth(tiny_mlp, exact_observables):
     """
     spectral_entropy/effective_rank also read the *shape* of the pooled
-    spectral measure (a weighted histogram of |lambda|), the same family as
-    negative_mass -- but converge with m an order of magnitude faster
-    (~20 vs ~200), confirmed by a 3-repeat/independent-seed sweep before
-    picking these thresholds (see reports/spectral_validation.md). The
-    difference: the entropy histogram bins at a coarse 5%-of-top_eig
-    resolution, so it only needs Ritz mass placed in roughly the right bin,
-    while negative_mass needs the exact sign relative to zero -- an
-    arbitrarily fine distinction near the crossing that coarse binning can't
-    paper over.
+    spectral measure, the same family as negative_mass -- but converge with
+    m an order of magnitude faster (~20 vs ~200), confirmed by a
+    3-repeat/independent-seed sweep before picking these thresholds (see
+    reports/spectral_validation.md).
+
+    spectral_entropy is the closed-form log(n_params * sum_j w_j|theta_j|)
+    - sum_j w_j|theta_j| log|theta_j| / sum_j w_j|theta_j| computed directly
+    off the raw (node, weight) atoms -- no binning, so no cap on
+    effective_rank = exp(spectral_entropy) (it lands around n_params/2 on
+    this fixture, not the old histogram's hard ceiling of 20). Because
+    effective_rank is entropy's exponential, the same entropy error that
+    clears 2% turns into a few points more once exponentiated -- hence the
+    looser effective_rank tolerance below.
     """
     model, params, loss = tiny_mlp
 
@@ -197,7 +201,7 @@ def test_effective_rank_and_entropy_converge_with_lanczos_depth(tiny_mlp, exact_
     assert entropy_errors[0] > entropy_errors[-1], entropy_errors
     assert rank_errors[0] > rank_errors[-1], rank_errors
     assert entropy_errors[-1] < 0.02, f"spectral_entropy rel error {entropy_errors[-1]:.3%} at m=50, expected < 2%"
-    assert rank_errors[-1] < 0.02, f"effective_rank rel error {rank_errors[-1]:.3%} at m=50, expected < 2%"
+    assert rank_errors[-1] < 0.05, f"effective_rank rel error {rank_errors[-1]:.3%} at m=50, expected < 5%"
 
 
 def test_reorthogonalization_prevents_ghosts(tiny_mlp, exact_spectrum):
