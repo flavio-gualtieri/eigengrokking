@@ -8,11 +8,10 @@ data/MNIST/
 # Logs
 logs/
 
-# Runs
-runs/
-runs_arch_sweep/
+# Interactive plotly duplicates of the PNG figures
+*_PLOTLY.html
 
-# Checkpoints
+# Checkpoints (figures/results under runs/ are tracked)
 *.pt
 *.pth
 *.ckpt
