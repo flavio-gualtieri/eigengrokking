@@ -56,6 +56,6 @@ class ExperimentConfig:
     log_every: int = 150
     eval_every: int = 1000
     checkpoint_every: int = 1000  # independent of eval_every -- see training/loop.py
-    output_dir: str = os.environ.get("OUTPUT_DIR", "./runs_arch_sweep")
+    output_dir: str = os.environ.get("OUTPUT_DIR", "./results")
     seed: int = 0
     dtype: torch.dtype = torch.float32
