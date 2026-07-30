@@ -20,3 +20,7 @@ checkpoints/
 # Ignore Python cache
 __pycache__/
 *.py[cod]
+
+
+# Results
+results/
