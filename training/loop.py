@@ -217,7 +217,7 @@ def run_experiment(task) -> Dict[str, Any]:
                         model=model,
                         m=cfg.spectral_m,
                         k=cfg.spectral_k,
-                        sigma=cfg.spectral_sigma,
+                        sigma_frac=cfg.spectral_sigma_frac,
                         loss=loss_spec,
                         probe_seed=cfg.seed,
                     )

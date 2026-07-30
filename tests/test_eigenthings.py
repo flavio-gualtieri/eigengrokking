@@ -82,7 +82,7 @@ def test_trace_converges_to_exact(tiny_mlp, exact_spectrum):
 
     rel_errors = []
     for k in [10, 100, 500]:
-        est = estimate_density(model, m=30, k=k, sigma=1.0, loss=loss, probe_seed=0)
+        est = estimate_density(model, m=30, k=k, sigma_frac=1.0, loss=loss, probe_seed=0)
         observed = compute_spectral_observables(est.probe_nodes, est.probe_weights, est.n_params)
         rel_errors.append(abs(observed.trace - exact_trace) / abs(exact_trace))
 
@@ -120,9 +120,9 @@ def test_density_matches_exact_histogram(tiny_mlp, exact_spectrum):
     discrete objects and aren't comparable directly).
     """
     model, params, loss = tiny_mlp
-    sigma = 0.05 * (exact_spectrum.max().item() - exact_spectrum.min().item())
 
-    est = estimate_density(model, m=100, k=300, sigma=sigma, loss=loss, probe_seed=0)
+    est = estimate_density(model, m=100, k=300, sigma_frac=0.05, loss=loss, probe_seed=0)
+    sigma = est.sigma  # realized absolute bandwidth (sigma_frac * cheap top_eig pre-pass estimate)
 
     # density_from_lanczos/gaussian_kernel take sigma as an explicit arg
     # (self.sigma from __init__ is unused by them), so m=1 here is a
@@ -159,7 +159,7 @@ def test_negative_mass_recovered(tiny_mlp, exact_spectrum, exact_observables):
 
     assert (exact_spectrum < 0).any(), "fixture has no negative curvature -- try a different seed"
 
-    est = estimate_density(model, m=50, k=100, sigma=1.0, loss=loss, probe_seed=0)
+    est = estimate_density(model, m=50, k=100, sigma_frac=1.0, loss=loss, probe_seed=0)
     observed = compute_spectral_observables(est.probe_nodes, est.probe_weights, est.n_params)
 
     assert abs(observed.negative_mass - exact_observables.negative_mass) < 0.02, (
@@ -189,7 +189,7 @@ def test_effective_rank_and_entropy_converge_with_lanczos_depth(tiny_mlp, exact_
     entropy_errors = []
     rank_errors = []
     for m in [10, 20, 30, 50]:
-        est = estimate_density(model, m=m, k=300, sigma=1.0, loss=loss, probe_seed=0)
+        est = estimate_density(model, m=m, k=300, sigma_frac=1.0, loss=loss, probe_seed=0)
         observed = compute_spectral_observables(est.probe_nodes, est.probe_weights, est.n_params)
         entropy_errors.append(
             abs(observed.spectral_entropy - exact_observables.spectral_entropy) / abs(exact_observables.spectral_entropy)
@@ -258,8 +258,8 @@ def test_determinism_fixed_seed(tiny_mlp):
     torch.use_deterministic_algorithms(True)
     try:
         model, params, loss = tiny_mlp
-        est1 = estimate_density(model, m=30, k=50, sigma=1.0, loss=loss, probe_seed=42)
-        est2 = estimate_density(model, m=30, k=50, sigma=1.0, loss=loss, probe_seed=42)
+        est1 = estimate_density(model, m=30, k=50, sigma_frac=1.0, loss=loss, probe_seed=42)
+        est2 = estimate_density(model, m=30, k=50, sigma_frac=1.0, loss=loss, probe_seed=42)
 
         assert torch.equal(est1.density, est2.density)
         assert torch.equal(est1.t_grid, est2.t_grid)

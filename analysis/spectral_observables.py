@@ -13,7 +13,7 @@ import torch
 @dataclass
 class SpectralObservables:
     top_eig: float          # lambda_max: largest Ritz value across all probes
-    bulk_edge: float        # median + bulk_mad_multiplier * MAD(nodes): robust bulk/outlier threshold
+    bulk_edge: float        # weighted median + bulk_mad_multiplier * weighted MAD: robust bulk/outlier threshold
     outlier_count: int      # distinct node clusters beyond bulk_edge
     trace: float            # Hutchinson-via-Lanczos estimate of tr(H)
     spectral_entropy: float # Shannon entropy of the |lambda| spectral measure
@@ -23,6 +23,20 @@ class SpectralObservables:
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+
+def _weighted_quantile(sorted_values: np.ndarray, sorted_weights: np.ndarray, q: float) -> float:
+    """
+    Weighted quantile of atoms already sorted ascending by value, via linear
+    interpolation on the weighted CDF (weights need not sum to 1). Each
+    atom's cumulative-probability coordinate is placed at its mass's
+    midpoint (Hazen-style) rather than its trailing edge, so a single
+    dominant atom's quantile lands at its own value instead of an edge.
+    """
+    cum_weights = np.cumsum(sorted_weights)
+    total = cum_weights[-1]
+    cdf = (cum_weights - 0.5 * sorted_weights) / total
+    return float(np.interp(q, cdf, sorted_values))
 
 
 def _pool_probes(
@@ -84,9 +98,15 @@ def compute_spectral_observables(
     top_eig = float(nodes[-1])
     resolution = max(resolution_frac * abs(top_eig), eps)
 
-    # --- bulk edge: robust (median + c*MAD) threshold on the pooled nodes ---
-    median = float(np.median(nodes))
-    mad = float(np.median(np.abs(nodes - median))) * 1.4826  # normal-consistent scale
+    # --- bulk edge: robust weighted (median + c*MAD) threshold on the pooled atoms ---
+    # nodes are Lanczos Ritz values, not i.i.d. draws from the spectral measure -- the
+    # weights carry the measure and can span orders of magnitude, so median/MAD must
+    # be read off the weighted CDF (already built from the sorted atoms above), not
+    # an unweighted count of nodes.
+    median = _weighted_quantile(nodes, weights, 0.5)
+    abs_dev = np.abs(nodes - median)
+    dev_order = np.argsort(abs_dev)
+    mad = _weighted_quantile(abs_dev[dev_order], weights[dev_order], 0.5) * 1.4826  # normal-consistent scale
     bulk_edge = median + bulk_mad_multiplier * max(mad, eps)
 
     # --- outlier count: distinct clusters of nodes beyond the bulk edge ---
