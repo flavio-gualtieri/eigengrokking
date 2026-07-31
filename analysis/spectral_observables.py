@@ -13,7 +13,7 @@ import torch
 @dataclass
 class SpectralObservables:
     top_eig: float          # lambda_max: largest Ritz value across all probes
-    bulk_edge: float        # weighted median + bulk_mad_multiplier * weighted MAD(nodes): robust bulk/outlier threshold
+    bulk_edge: float        # weighted median + bulk_mad_multiplier * weighted MAD: robust bulk/outlier threshold
     outlier_count: int      # distinct node clusters beyond bulk_edge
     trace: float            # Hutchinson-via-Lanczos estimate of tr(H)
     spectral_entropy: float # Shannon entropy of the |lambda| spectral measure
@@ -25,22 +25,18 @@ class SpectralObservables:
         return asdict(self)
 
 
-def _weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
+def _weighted_quantile(sorted_values: np.ndarray, sorted_weights: np.ndarray, q: float) -> float:
     """
-    Weighted median: the value at the 0.5-cumulative-weight point. Plain
-    np.median over pooled Ritz nodes silently assumes every node carries
-    equal mass, which SLQ nodes don't -- Gauss-quadrature node placement is
-    moment-matching, not density-matching, so nodes cluster near spectral
-    edges regardless of how much true mass sits there. That's invisible on
-    a roughly-flat spectrum but produces a large, m-independent bias on any
-    spectrum with a big bulk/outlier mass imbalance (see
-    reports/spectral_validation.md, bulk_edge/conditioning sections).
+    Weighted quantile of atoms already sorted ascending by value, via linear
+    interpolation on the weighted CDF (weights need not sum to 1). Each
+    atom's cumulative-probability coordinate is placed at its mass's
+    midpoint (Hazen-style) rather than its trailing edge, so a single
+    dominant atom's quantile lands at its own value instead of an edge.
     """
-    order = np.argsort(values)
-    v, w = values[order], weights[order]
-    cw = np.cumsum(w)
-    idx = np.searchsorted(cw, 0.5 * w.sum())
-    return float(v[min(idx, len(v) - 1)])
+    cum_weights = np.cumsum(sorted_weights)
+    total = cum_weights[-1]
+    cdf = (cum_weights - 0.5 * sorted_weights) / total
+    return float(np.interp(q, cdf, sorted_values))
 
 
 def _pool_probes(
@@ -74,10 +70,9 @@ def compute_spectral_observables(
     plotting -- avoids extra smoothing-bandwidth bias in tail-sensitive
     quantities like top_eig and outlier detection.
 
-    `resolution_frac` sets one shared length scale (as a fraction of
-    |top_eig|) used both to decide when two outlier nodes are "the same"
-    eigenvalue rediscovered by different probes, and as the bin width for the
-    entropy histogram.
+    `resolution_frac` sets the length scale (as a fraction of |top_eig|) used
+    to decide when two outlier nodes are "the same" eigenvalue rediscovered
+    by different probes.
 
     `margin_c` sets epsilon = margin_c * |top_eig|, the threshold used by
     `negative_mass` (below `-epsilon`, not raw `< 0`): Lanczos can produce
@@ -103,9 +98,15 @@ def compute_spectral_observables(
     top_eig = float(nodes[-1])
     resolution = max(resolution_frac * abs(top_eig), eps)
 
-    # --- bulk edge: robust (weighted median + c*weighted MAD) threshold on the pooled nodes ---
-    median = _weighted_median(nodes, weights)
-    mad = _weighted_median(np.abs(nodes - median), weights) * 1.4826  # normal-consistent scale
+    # --- bulk edge: robust weighted (median + c*MAD) threshold on the pooled atoms ---
+    # nodes are Lanczos Ritz values, not i.i.d. draws from the spectral measure -- the
+    # weights carry the measure and can span orders of magnitude, so median/MAD must
+    # be read off the weighted CDF (already built from the sorted atoms above), not
+    # an unweighted count of nodes.
+    median = _weighted_quantile(nodes, weights, 0.5)
+    abs_dev = np.abs(nodes - median)
+    dev_order = np.argsort(abs_dev)
+    mad = _weighted_quantile(abs_dev[dev_order], weights[dev_order], 0.5) * 1.4826  # normal-consistent scale
     bulk_edge = median + bulk_mad_multiplier * max(mad, eps)
 
     # --- outlier count: distinct clusters of nodes beyond the bulk edge ---
@@ -120,13 +121,20 @@ def compute_spectral_observables(
     negative_mass = float(weights[nodes < -epsilon].sum())
 
     # --- spectral entropy / effective rank, over |lambda| ---
+    # Closed form off the raw atoms (no binning, so no artificial cap on
+    # effective_rank): treating each of n_params underlying eigenvalues as
+    # carrying ~1/n_params of the mass and reweighting by |theta_j| gives
+    #   S = log(n_params * sum_j w_j|theta_j|) - sum_j w_j|theta_j| log|theta_j| / sum_j w_j|theta_j|
+    # n_params (not the pooled Ritz node count, which scales with m*k and
+    # would make S drift with Lanczos depth/probe count rather than track
+    # the actual spectrum) keeps this comparable across probe/depth settings.
     abs_nodes = np.abs(nodes)
-    abs_max = max(float(abs_nodes.max()), eps)
-    n_bins = max(int(np.ceil(abs_max / resolution)), 1)
-    hist, _ = np.histogram(abs_nodes, bins=n_bins, range=(0.0, abs_max), weights=weights)
-    p = hist / max(hist.sum(), eps)
-    p = p[p > eps]
-    spectral_entropy = float(-np.sum(p * np.log(p)))
+    weighted_abs = weights * abs_nodes
+    z = float(weighted_abs.sum())
+    z_safe = max(z, eps)
+    log_abs = np.log(np.maximum(abs_nodes, eps))
+    cross_term = float(np.sum(weighted_abs * log_abs))
+    spectral_entropy = float(np.log(n_params * z_safe) - cross_term / z_safe)
     effective_rank = float(math.exp(spectral_entropy))
 
     conditioning = float(top_eig / bulk_edge) if abs(bulk_edge) > eps else float("nan")

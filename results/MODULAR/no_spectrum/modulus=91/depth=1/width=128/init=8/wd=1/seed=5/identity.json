@@ -1,0 +1,11 @@
+{
+  "task": "MODULAR",
+  "depth": 1,
+  "width": 128,
+  "initialization_scale": 8.0,
+  "weight_decay": 1.0,
+  "epochs": 150000,
+  "spectrum": false,
+  "seed": 5,
+  "modulus": 91
+}

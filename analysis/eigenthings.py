@@ -29,6 +29,12 @@ class Eigenthings:
         self.params = params
         self.orthogonalize = orthogonalize
 
+        # First-order grads w.r.t. a create_graph=True loss are what makes
+        # HVPs possible (Hv = d/dparams (grad . v)), and the loss is fixed
+        # for this snapshot -- so compute them once here rather than
+        # re-walking the whole backward pass on every hvp() call.
+        self.grads = torch.autograd.grad(self.loss, self.params, create_graph=True, allow_unused=True)
+
 
     def gaussian_kernel(self, t, center, sigma):
         coeff = sigma * math.sqrt(2.0 * math.pi)
@@ -58,10 +64,8 @@ class Eigenthings:
         q = q.to(self.device)
         q_list = self.unpack_vec(q)
 
-        grads = torch.autograd.grad(self.loss, self.params, create_graph=True, allow_unused=True)
-
         gv = torch.zeros((), device=self.device, dtype=torch.float32)
-        for g, v in zip(grads, q_list):
+        for g, v in zip(self.grads, q_list):
             if g is not None:
                 gv = gv + (g * v).sum()
 
@@ -172,9 +176,19 @@ class SpectralEstimate:
     probe_nodes: list[torch.Tensor]
     probe_weights: list[torch.Tensor]
     n_params: int
+    sigma: float  # realized absolute KDE bandwidth = sigma_frac * (cheap pre-pass top_eig estimate)
 
 
-def estimate_density(model, m, k, sigma, loss, probe_seed: int) -> SpectralEstimate:
+def estimate_density(
+        model,
+        m,
+        k,
+        sigma_frac,
+        loss,
+        probe_seed: int,
+        top_eig_probe_m: int = 20,
+        eps: float = 1e-12,
+    ) -> SpectralEstimate:
     """
     Stochastic Lanczos Quadrature estimate of the Hessian's spectral density.
 
@@ -183,21 +197,50 @@ def estimate_density(model, m, k, sigma, loss, probe_seed: int) -> SpectralEstim
     training run) draws bit-identical probe vectors every time -- isolating
     parameter-driven spectral change from probe-sampling noise across
     checkpoints.
+
+    `sigma_frac` sets the KDE bandwidth as a fraction of lambda_max rather
+    than an absolute value. lambda_max can move by orders of magnitude over
+    a training run, so a fixed absolute sigma makes the bandwidth -- and
+    therefore how comparable the plotted density is -- inconsistent between
+    checkpoints, and it interacts badly with the `nt` cap below: dt=sigma/5
+    needs to shrink alongside the node range (which scales with lambda_max)
+    or nt=(hi-lo)/dt can blow past the 50000 cap and get silently coarsened
+    past sigma/5. Getting an absolute sigma requires knowing lambda_max
+    first, so a cheap single-probe, m=`top_eig_probe_m` Lanczos pass
+    estimates it before the real k-probe, m-step pass runs -- top_eig
+    converges fast with m (see reports/spectral_validation.md), so a shallow
+    pre-pass is enough. The realized absolute sigma is returned on
+    `SpectralEstimate.sigma` since callers no longer choose it directly.
     """
     params = [p for p in model.parameters() if p.requires_grad]
     device = next(model.parameters()).device
 
     n = sum(p.numel() for p in params)
-    generator = torch.Generator().manual_seed(probe_seed)
 
     eigen = Eigenthings(
         model=model,
-        m=m,
-        sigma=sigma,
+        m=top_eig_probe_m,
+        sigma=0.0,
         params=params,
         device=device,
         loss=loss,
         )
+
+    # Own generator, independent of the main k-probe draws below, so adding
+    # this pre-pass doesn't perturb the probe sequence everything else uses.
+    pre_generator = torch.Generator().manual_seed(probe_seed)
+    v0 = rademacher_probe(n, device, dtype=torch.float32, generator=pre_generator)
+    v0 = v0 / torch.linalg.norm(v0)
+    pre_nodes, _ = eigen.lanczos_quadrature(v0)
+    top_eig_estimate = abs(pre_nodes.max().item())
+    sigma = max(sigma_frac * top_eig_estimate, eps)
+
+    # Reuse the same instance (same Eigenthings.grads, computed once in
+    # __init__) for the real pass rather than constructing a second one.
+    eigen.m = m
+    eigen.sigma = sigma
+
+    generator = torch.Generator().manual_seed(probe_seed)
 
     all_nodes = []
     all_weights = []
@@ -231,4 +274,5 @@ def estimate_density(model, m, k, sigma, loss, probe_seed: int) -> SpectralEstim
         probe_nodes=all_nodes,
         probe_weights=all_weights,
         n_params=n,
+        sigma=sigma,
     )

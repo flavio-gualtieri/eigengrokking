@@ -9,7 +9,7 @@ Usage:
 
 <family_dir> is the directory that directly contains the `seed=N/` run
 directories, e.g.:
-    runs_arch_sweep/MODULAR/depth=1/width=128/init=1/wd=1
+    results/MODULAR/depth=1/width=128/init=1/wd=1
 
 Single-seed grokking curves (and single-seed spectral statistics) are
 notoriously variable; this pools >=5 seeds of the same architecture/

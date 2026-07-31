@@ -12,7 +12,12 @@ from tasks.mod_add import ModularAddition_task  # noqa: E402
 from project_io.dir_making import make_dirs  # noqa: E402
 
 
-def build_config(weight_decay: float, optimization_steps: int, seed: int) -> ExperimentConfig:
+def build_config(
+    weight_decay: float,
+    optimization_steps: int,
+    seed: int,
+    initialization_scale: float = 1.0,
+) -> ExperimentConfig:
     return ExperimentConfig(
         task="MODULAR",
         modulus=91,
@@ -28,7 +33,7 @@ def build_config(weight_decay: float, optimization_steps: int, seed: int) -> Exp
         loss_function="CrossEntropy",
         batch_size=8192,  # > 91**2 * 0.3 (~2484): full-batch, matches configs/experiments.py's _FULL_BATCH pattern
         optimization_steps=optimization_steps,
-        initialization_scale=1.0,
+        initialization_scale=initialization_scale,
         log_every=100,
         eval_every=100,
         checkpoint_every=100,  # fine enough that whatever window the elbow lands in has good checkpoint coverage
@@ -42,9 +47,10 @@ def main() -> None:
     parser.add_argument("--weight_decay", type=float, default=1.0)
     parser.add_argument("--optimization_steps", type=int, default=30_000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--initialization_scale", type=float, default=1.0)
     args = parser.parse_args()
 
-    cfg = build_config(args.weight_decay, args.optimization_steps, args.seed)
+    cfg = build_config(args.weight_decay, args.optimization_steps, args.seed, args.initialization_scale)
     dirs = make_dirs(cfg, test_mode=cfg.test_mode)
     print(f"Run directory: {dirs['base']}")
 

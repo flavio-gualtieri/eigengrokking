@@ -195,7 +195,7 @@ std bands:
 
 where <family_dir> is the directory holding the `seed=N/` run directories
 for one architecture (e.g.
-runs_arch_sweep/MODULAR/depth=1/width=128/init=1/wd=1). It loads each
+results/MODULAR/depth=1/width=128/init=1/wd=1). It loads each
 seed's training_data_*.npz, and for every accuracy curve and every spectral
 observable, interpolates onto a shared step grid before computing mean/std
 across seeds. Interpolation (rather than an exact step join) is necessary

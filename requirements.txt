@@ -6,3 +6,5 @@ matplotlib
 plotly
 tqdm
 openai
+scikit-learn
+pytest

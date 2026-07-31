@@ -11,9 +11,11 @@ logs/
 # Runs
 runs/
 runs_arch_sweep/
-results/
 
-# Checkpoints
+# Interactive plotly duplicates of the PNG figures
+*_PLOTLY.html
+
+# Checkpoints (figures/results under runs/ are tracked)
 *.pt
 *.pth
 *.ckpt
@@ -22,3 +24,6 @@ checkpoints/
 # Ignore Python cache
 __pycache__/
 *.py[cod]
+
+# Results
+results/

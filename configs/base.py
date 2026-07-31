@@ -33,9 +33,9 @@ class ExperimentConfig:
     initialization_scale: float = 1.0
 
     # Spectral analysis
-    spectral_m: int = 100              # Lanczos steps per probe -- set by bulk_edge/conditioning (m>=100 for <0.2% post-fix), see reports/spectral_validation.md
+    spectral_m: int = 50                # Lanczos steps per probe -- see reports/spectral_validation.md ("m=50, k=300" comfortably clears every m-bound field post negative-mass-fix)
     spectral_k: int = 100              # number of Rademacher probes (SLQ) -- k=16 under-converged trace (~17-19% error); k=100 gets ~5%
-    spectral_sigma: float = 0.01      # KDE bandwidth for the plotted density
+    spectral_sigma_frac: float = 0.01  # KDE bandwidth as a fraction of a cheap top_eig pre-pass estimate (see analysis/eigenthings.py:estimate_density) -- not an absolute value, since lambda_max moves by orders of magnitude over a run
     spectral_batch_size: int = 512    # fixed batch (see training/loop.py) the Hessian loss is computed on
     spectral_growth: float = 1.15     # geometric growth factor for the coarse logging phase
     spectral_gap_rate_threshold: float = 1e-4  # |d(train_acc - test_acc)/d(step)| that triggers dense logging
@@ -56,6 +56,6 @@ class ExperimentConfig:
     log_every: int = 150
     eval_every: int = 1000
     checkpoint_every: int = 1000  # independent of eval_every -- see training/loop.py
-    output_dir: str = os.environ.get("OUTPUT_DIR", "./runs_arch_sweep")
+    output_dir: str = os.environ.get("OUTPUT_DIR", "./results")
     seed: int = 0
     dtype: torch.dtype = torch.float32
