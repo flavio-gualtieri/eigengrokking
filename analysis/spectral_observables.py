@@ -13,7 +13,7 @@ import torch
 @dataclass
 class SpectralObservables:
     top_eig: float          # lambda_max: largest Ritz value across all probes
-    bulk_edge: float        # median + bulk_mad_multiplier * MAD(nodes): robust bulk/outlier threshold
+    bulk_edge: float        # weighted median + bulk_mad_multiplier * weighted MAD(nodes): robust bulk/outlier threshold
     outlier_count: int      # distinct node clusters beyond bulk_edge
     trace: float            # Hutchinson-via-Lanczos estimate of tr(H)
     spectral_entropy: float # Shannon entropy of the |lambda| spectral measure
@@ -23,6 +23,24 @@ class SpectralObservables:
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+
+def _weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
+    """
+    Weighted median: the value at the 0.5-cumulative-weight point. Plain
+    np.median over pooled Ritz nodes silently assumes every node carries
+    equal mass, which SLQ nodes don't -- Gauss-quadrature node placement is
+    moment-matching, not density-matching, so nodes cluster near spectral
+    edges regardless of how much true mass sits there. That's invisible on
+    a roughly-flat spectrum but produces a large, m-independent bias on any
+    spectrum with a big bulk/outlier mass imbalance (see
+    reports/spectral_validation.md, bulk_edge/conditioning sections).
+    """
+    order = np.argsort(values)
+    v, w = values[order], weights[order]
+    cw = np.cumsum(w)
+    idx = np.searchsorted(cw, 0.5 * w.sum())
+    return float(v[min(idx, len(v) - 1)])
 
 
 def _pool_probes(
@@ -85,9 +103,9 @@ def compute_spectral_observables(
     top_eig = float(nodes[-1])
     resolution = max(resolution_frac * abs(top_eig), eps)
 
-    # --- bulk edge: robust (median + c*MAD) threshold on the pooled nodes ---
-    median = float(np.median(nodes))
-    mad = float(np.median(np.abs(nodes - median))) * 1.4826  # normal-consistent scale
+    # --- bulk edge: robust (weighted median + c*weighted MAD) threshold on the pooled nodes ---
+    median = _weighted_median(nodes, weights)
+    mad = _weighted_median(np.abs(nodes - median), weights) * 1.4826  # normal-consistent scale
     bulk_edge = median + bulk_mad_multiplier * max(mad, eps)
 
     # --- outlier count: distinct clusters of nodes beyond the bulk edge ---

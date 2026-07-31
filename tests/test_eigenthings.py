@@ -9,7 +9,7 @@ import torch.nn as nn
 from models.mlp import MLP
 from analysis.eigenthings import Eigenthings, estimate_density, rademacher_probe
 from analysis.spectral_observables import compute_spectral_observables
-from analysis.legacy.toy_eigenthings import compute_hessian_eigenvalues
+from tests.reference_hessian import compute_hessian_eigenvalues
 
 DEVICE = torch.device("cpu")  # keeps test_determinism_fixed_seed meaningful
 
@@ -20,7 +20,7 @@ def tiny_mlp():
     Fixed-seed tiny MLP + one forward pass -> one loss tensor. Module-scoped:
     nothing below mutates model parameters, so every test in this file reads
     off the same loss graph (safe because every HVP/Hessian call in
-    eigenthings.py and legacy/toy_eigenthings.py uses create_graph=True /
+    eigenthings.py and reference_hessian.py uses create_graph=True /
     retain_graph=True, so the graph never gets freed).
     """
     torch.manual_seed(0)

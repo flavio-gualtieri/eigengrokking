@@ -78,13 +78,21 @@ distribution that approximates the normalized spectral measure
                    because it comes from raw data, not the KDE curve (KDE
                    bandwidth would blur/underestimate the tail).
 
-  bulk_edge       median(nodes) + 5 * MAD(nodes), a robust (non-Gaussian-
-                   assuming) outlier threshold. MAD is scaled by 1.4826 to be
-                   consistent with a normal-distribution standard deviation.
-                   Chosen over a fixed threshold (the old mass_above_thresh
-                   at lambda=1.0) or a Marchenko-Pastur-style edge, which
-                   needs an aspect ratio that isn't well-defined for a
-                   Hessian.
+  bulk_edge       weighted_median(nodes) + 5 * weighted_MAD(nodes), a robust
+                   (non-Gaussian-assuming) outlier threshold. MAD is scaled
+                   by 1.4826 to be consistent with a normal-distribution
+                   standard deviation. Chosen over a fixed threshold (the old
+                   mass_above_thresh at lambda=1.0) or a Marchenko-Pastur-
+                   style edge, which needs an aspect ratio that isn't well-
+                   defined for a Hessian. The median/MAD are weighted by each
+                   pooled node's probe weight, not a plain np.median over raw
+                   node values -- validation on a wider-dynamic-range fixture
+                   (reports/spectral_validation.md, bulk_edge/conditioning
+                   section) found the unweighted version ~30-50% biased at
+                   every m tested: Lanczos/Gauss-quadrature node placement is
+                   moment-matching, not density-matching, so raw node counts
+                   don't reflect true spectral mass once the bulk and an
+                   outlier cluster are very unequal in size.
 
   outlier_count   Nodes above bulk_edge, then clustered: consecutive sorted
                    outlier nodes closer than `resolution` (5% of |top_eig|)

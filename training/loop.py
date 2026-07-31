@@ -151,6 +151,8 @@ def run_experiment(task) -> Dict[str, Any]:
                 tr_loss = compute_loss(model, train_eval_loader, cfg.loss_function, device, N=len(train_ds), dataset_name=None)
                 tr_acc = compute_accuracy(model, train_eval_loader, device, N=len(train_ds), dataset_name=None)
                 wn, lwn = _weight_norms(model)
+                grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf")).item()
+                history.setdefault("grad_norms", []).append(grad_norm)
 
                 history["train_losses"].append(tr_loss)
                 history["train_accuracies"].append(tr_acc)

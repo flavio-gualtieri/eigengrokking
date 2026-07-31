@@ -11,6 +11,7 @@ logs/
 # Runs
 runs/
 runs_arch_sweep/
+results/
 
 # Checkpoints
 *.pt
