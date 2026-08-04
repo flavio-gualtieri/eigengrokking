@@ -33,7 +33,7 @@ class ExperimentConfig:
     initialization_scale: float = 1.0
 
     # Spectral analysis
-    spectral_m: int = 50                # Lanczos steps per probe -- see reports/spectral_validation.md ("m=50, k=300" comfortably clears every m-bound field post negative-mass-fix)
+    spectral_m: int = 100                # Lanczos steps per probe -- bulk_edge/conditioning (post estimator fix) need m>=100 for <0.2%, the tightest m-bound field; see reports/spectral_validation.md ("Consequence for production defaults")
     spectral_k: int = 100              # number of Rademacher probes (SLQ) -- k=16 under-converged trace (~17-19% error); k=100 gets ~5%
     spectral_sigma_frac: float = 0.01  # KDE bandwidth as a fraction of a cheap top_eig pre-pass estimate (see analysis/eigenthings.py:estimate_density) -- not an absolute value, since lambda_max moves by orders of magnitude over a run
     spectral_batch_size: int = 512    # fixed batch (see training/loop.py) the Hessian loss is computed on
