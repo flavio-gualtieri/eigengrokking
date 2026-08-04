@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
-
 import torch
+
 import torch.nn as nn
+
+from dataclasses import dataclass
 
 from collections.abc import Iterable
 
@@ -35,11 +36,9 @@ class Eigenthings:
         # re-walking the whole backward pass on every hvp() call.
         self.grads = torch.autograd.grad(self.loss, self.params, create_graph=True, allow_unused=True)
 
-
     def gaussian_kernel(self, t, center, sigma):
         coeff = sigma * math.sqrt(2.0 * math.pi)
         return torch.exp(-0.5 * ((t - center) / sigma) ** 2) / coeff
-        
 
     def unpack_vec(self, v: torch.Tensor) -> list[torch.Tensor]:
         out: list[torch.Tensor] = []
@@ -51,14 +50,12 @@ class Eigenthings:
 
         return out
 
-
     def pack_list(self, xs: Iterable[torch.Tensor]) -> torch.Tensor:
         xs = list(xs)
         if len(xs) == 0:
             return torch.empty(0, device=self.device)
         
         return torch.cat([x.reshape(-1) for x in xs], dim=0)
-
 
     def hvp(self, q):
         q = q.to(self.device)
@@ -74,7 +71,6 @@ class Eigenthings:
         # Handle None gradients by converting to zeros
         Hv_list = [h if h is not None else torch.zeros_like(p) for h, p in zip(Hv, self.params)]
         return self.pack_list(Hv_list)
-
 
     def lanczos(self, v0):
         v0 = torch.as_tensor(v0, dtype=torch.float32, device=self.device)
@@ -126,7 +122,6 @@ class Eigenthings:
 
         return T
 
-
     def lanczos_quadrature(self, v0):
         T = self.lanczos(v0)
 
@@ -137,7 +132,6 @@ class Eigenthings:
         weights = (eigvecs[0, :] ** 2).to(self.device)
 
         return nodes, weights
-
 
     def density_from_lanczos(self, nodes, weights, t_grid, sigma):
         density = torch.zeros_like(t_grid)
