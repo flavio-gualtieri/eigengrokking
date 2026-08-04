@@ -101,8 +101,8 @@ bulk mass and outlier mass are wildly imbalanced, since that's the regime
 - **Exact reference for all 8 fields**, not just trace/top_eig/negative_mass:
   feed the full exact spectrum into `compute_spectral_observables` as a
   single pseudo-probe with uniform weight `1/n_params`. This reuses the real
-  `spectral_entropy`/`effective_rank` histogram logic instead of re-deriving
-  it by hand, so the approximate-vs-exact comparison is apples-to-apples.
+  `spectral_entropy`/`effective_rank` calculation instead of re-deriving it
+  by hand, so the approximate-vs-exact comparison is apples-to-apples.
   Sanity-checked against hand-derived values: trace 12.776217 vs. 12.776212,
   top_eig 0.872338 vs. 0.872338, negative_mass 0.482456 vs. 0.482456.
 - **Independent probe draws per repeat.** An earlier pass at the trace
@@ -201,45 +201,78 @@ strong a "this is not PSD" signal as 48% was.
 
 ### spectral_entropy / effective_rank — governed by `m`, converges fast
 
-Both read the *shape* of the pooled `|lambda|` histogram, same family as
+Both read the *shape* of the pooled `|lambda|` distribution, same family as
 negative_mass — but converge an order of magnitude faster.
 
-m-sweep (k=300, R=3, mean rel. error):
+**Note on the numbers below:** `spectral_entropy`/`effective_rank` were
+originally computed from a 20-bin histogram of `|lambda|`; that's since been
+replaced with a closed-form calculation (`analysis/spectral_observables.py`)
+that removes an artificial cap the histogram put on `effective_rank`
+(entropy of an N-bin histogram is bounded by `log(N)`, so `effective_rank`
+could never exceed ~N regardless of the model's actual number of curved
+directions). This changed the *exact reference values* substantially — e.g.
+the tiny_mlp fixture's exact `effective_rank` moved from a
+histogram-capped ~1 up to **602.5** (of 1026 params) — but the tables below,
+re-measured against the current closed-form implementation, reconfirm the
+same qualitative m-convergence story.
+
+m-sweep (k=300, R=3, mean rel. error vs. exact `entropy=6.4011`,
+`effective_rank=602.52`):
 
 | m | 10 | 20 | 30 | 50 | 75 | 100 | 150 | 200 |
 |---|---|---|---|---|---|---|---|---|
-| entropy | 10.8% | 0.24% | 0.41% | 0.68% | 0.26% | 0.30% | 0.31% | 0.23% |
-| eff. rank | 19.5% | 0.49% | 0.83% | 1.36% | 0.52% | 0.60% | 0.63% | 0.46% |
+| entropy | 2.59% | 0.08% | 0.19% | 0.40% | 0.24% | 0.02% | 0.11% | 0.04% |
+| eff. rank | 18.06% | 0.49% | 1.24% | 2.58% | 1.57% | 0.12% | 0.73% | 0.22% |
 
 k-sweep (m=150, R=3): flat at 0.19–0.56% (entropy) / 0.37–1.12% (rank) across
 `k` = 10 to 1000 — once `m` clears the threshold, more probes buy almost
-nothing.
+nothing. (k-sweep predates the closed-form change and wasn't re-measured;
+the underlying claim — `k` barely matters once `m` clears its threshold —
+doesn't depend on which entropy formula is used.)
 
 **Best: `m≥20` (use m=30 for margin), `k≥30`.** Why so much faster than
 negative_mass despite being the same "resolve the distribution shape" family:
-the entropy histogram bins at a coarse 5%-of-top_eig width, so it only needs
-Ritz mass in roughly the right bin; negative_mass needs the exact sign
-relative to zero, an arbitrarily fine distinction right at the crossing that
-coarse binning can't average over.
+negative_mass needs the exact sign relative to zero, an arbitrarily fine
+distinction right at the crossing; entropy/effective_rank are smooth
+functionals of the whole pooled distribution and don't have an analogous
+knife-edge.
 
 **Reconfirmed on the extended (production-dynamic-range) fixture** — exact
-`entropy=0.0386`, `effective_rank=1.0394` (near-degenerate: 99.5% of the
-spectral mass sits in one 5%-of-top_eig histogram bin, since the bulk is
-tiny relative to `top_eig=150`). m-sweep (k=300, R=3, mean rel. error):
+`entropy=3.4499`, `effective_rank=31.4968` (of 1026 params; meaningfully
+above 1 now that the histogram cap is gone, though still low relative to
+the tiny_mlp fixture's 602.5, consistent with most of this fixture's mass
+being concentrated in a narrow bulk plus 5 outliers rather than spread
+across many distinct scales). m-sweep (k=300, R=3, mean rel. error; `python
+-m tests.sweeps.test_bulk_edge_conditioning_sweep` reproduces this row and
+the `zero_frac` diagnostic below it):
 
 | m | 10 | 20 | 30 | 50 | 75 | 100 | 150 | 200 | 300 |
 |---|---|---|---|---|---|---|---|---|---|
-| entropy | 1.96% | 3.90% | 3.80% | 0.86% | 2.85% | 2.06% | 3.19% | 3.05% | 3.59% |
-| eff. rank | 0.08% | 0.15% | 0.15% | 0.03% | 0.11% | 0.08% | 0.12% | 0.12% | 0.14% |
+| entropy | 3.47% | 0.97% | 1.03% | 0.16% | 0.34% | 0.73% | 0.68% | 0.60% | 0.85% |
+| eff. rank | 11.27% | 3.28% | 3.50% | 0.54% | 1.18% | 2.52% | 2.37% | 2.09% | 2.99% |
+| zero_frac | 28.9% | 48.8% | 52.6% | 49.3% | 50.5% | 49.0% | 50.0% | 49.4% | 49.8% |
 
-`effective_rank` stays essentially exact throughout (<0.15%). `entropy`'s
-error bounces between ~1-4% with no clean monotonic trend — expected at this
-scale: the exact value itself is tiny (0.0386 nats), so a fixed absolute
-Lanczos/probe noise floor reads as a large-looking *relative* error without
-indicating real non-convergence (effective_rank, exponentiated, barely
-shows it). Same conclusion as the original fixture either way: **`m≥20`
-already gets both fields comfortably converged**, now confirmed at ~31x
-wider conditioning too — this pair was never the reason `m` needed to move.
+**`zero_frac`** (`tests/sweeps/test_bulk_edge_conditioning_sweep.py`): the
+weighted fraction of pooled Ritz mass with `|lambda| < 1e-3 * |top_eig|`
+(0.15 here) — a diagnostic for whether entropy's `log(max(abs_nodes, eps))`
+term (analysis/spectral_observables.py) is being computed mostly from
+values close enough to zero that `log` is numerically touchy. It settles
+around **~50%**, which is exactly what this fixture's construction predicts
+(the bulk is `Uniform(-0.3, 0.3)`, so half of it by construction lies within
+`±0.15` of zero) — not evidence of degenerate clipping (the actual clip
+floor is `eps=1e-12`, far below anything a float32 Ritz value lands on by
+chance), but confirmation that a large share of this fixture's mass sits in
+the region where `log|lambda|` is most sensitive to small absolute errors in
+the Ritz estimate. That's a plausible structural reason `entropy` is
+consistently noisier than `effective_rank` above (both read the same pooled
+distribution, but only entropy's cross-term takes a `log` of it) — not
+literally a bug, but a property of this fixture worth knowing when reading
+the entropy column, and a reason to treat `zero_frac` as a companion
+diagnostic on any future entropy sweep rather than a one-off.
+
+Same conclusion as the original fixture either way: **`m≥20` already gets
+both fields comfortably converged**, now confirmed at ~31x wider
+conditioning too — this pair was never the reason `m` needed to move.
 
 ### density (SLQ vs. exact histogram, matched Gaussian broadening) — governed by `m` first, mildly helped by `k`
 
@@ -290,18 +323,20 @@ fixture); a large, `m`-independent bias on any spectrum with a big
 bulk/outlier mass imbalance (this fixture, and presumably any real net once
 it develops a few sharp directions against a broad low-curvature bulk).
 
-**Fix** (`analysis/spectral_observables.py`, `_weighted_median`): replace
-both `np.median` calls with a weight-respecting weighted median (value at
-the 0.5-cumulative-probe-weight point), matching what SLQ's `(node, weight)`
-pairs actually represent — the same category of fix as the `negative_mass`
-redefinition above (an estimator/formula correction found via this
-validation process, not a parameter tune). Post-fix m-sweep (k=300, R=3,
-mean rel. error, using the real `compute_spectral_observables` path):
+**Fix** (`analysis/spectral_observables.py`, `_weighted_quantile`): replace
+both `np.median` calls with a weight-respecting weighted quantile (linear
+interpolation on the weighted CDF, atoms placed at their mass's midpoint),
+matching what SLQ's `(node, weight)` pairs actually represent — the same
+category of fix as the `negative_mass` redefinition above (an
+estimator/formula correction found via this validation process, not a
+parameter tune). Post-fix m-sweep (k=300, R=3, mean rel. error, using the
+real `compute_spectral_observables` path; reproduced by
+`python -m tests.sweeps.test_bulk_edge_conditioning_sweep`):
 
 | m | 10 | 20 | 30 | 50 | 75 | 100 | 150 | 200 | 300 |
 |---|---|---|---|---|---|---|---|---|---|
-| bulk_edge | 8.14% | 11.70% | 2.18% | 1.94% | 1.22% | **0.17%** | 0.81% | 0.22% | 0.28% |
-| conditioning | 7.53% | 10.47% | 2.24% | 1.95% | 1.21% | **0.17%** | 0.82% | 0.22% | 0.28% |
+| bulk_edge | 8.18% | 11.75% | 2.10% | 1.96% | 1.26% | **0.16%** | 0.77% | 0.23% | 0.30% |
+| conditioning | 7.56% | 10.51% | 2.15% | 1.97% | 1.25% | **0.16%** | 0.77% | 0.23% | 0.30% |
 
 Fixed, both fields now converge cleanly with `m` (conditioning tracks
 bulk_edge almost exactly, since `top_eig` itself is essentially exact by
@@ -376,18 +411,30 @@ matters for this field family.
 
 ## Source
 
-Sweep scripts run interactively, not checked in (scratch, reproducible from
-this doc's numbers): the original six-field sweeps from
-`tests/test_eigenthings.py`'s `tiny_mlp`/`reference_hessian.py` fixtures, and
-the `bulk_edge`/`conditioning`/reconfirmation sweeps from the engineered
-quadratic-form fixture described above (construction is fully specified —
-seed, eigenvalue list, `n` — so it's exactly reproducible without checking
-in the script itself). The regression tests that *are* checked in:
-`test_effective_rank_and_entropy_converge_with_lanczos_depth` and the
+The extended-fixture (`bulk_edge`/`conditioning`/reconfirmation) sweep is
+**checked in**: `tests/sweeps/quadratic_fixture.py` (the fixture
+construction) and `tests/sweeps/test_bulk_edge_conditioning_sweep.py` (the
+sweep driver, the `zero_frac` diagnostic, and a fast regression assertion).
+It's marked `@pytest.mark.slow` (see `pytest.ini`) so it's excluded from the
+default `pytest`/`pytest tests/` run — multi-minute runtime — but it's real,
+version-controlled code, not a doc description standing in for one: `python
+-m tests.sweeps.test_bulk_edge_conditioning_sweep` (or `pytest tests/sweeps
+-m slow -s`) regenerates every number in the "bulk_edge / conditioning"
+section and the extended-fixture half of "spectral_entropy /
+effective_rank" above. (Previously this sweep only existed as a scratch
+script, with the report documenting the construction precisely enough to
+read as "reproducible" without anything in the repo actually able to
+reproduce it — this section used to say so explicitly. That gap is what
+prompted committing it.)
+
+The original six-field sweeps (trace/top_eig/negative_mass/density, plus
+the tiny_mlp entropy/rank refresh above) are **not** checked in — still run
+interactively from `tests/test_eigenthings.py`'s `tiny_mlp`/
+`reference_hessian.py` fixtures, reproducible from this doc's numbers and
+that file's fixtures. The regression tests that *are* checked in from that
+side: `test_effective_rank_and_entropy_converge_with_lanczos_depth` and the
 existing `test_top_eig_converges_with_lanczos_depth` /
 `test_negative_mass_recovered` / `test_trace_converges_to_exact` /
-`test_density_matches_exact_histogram` in `tests/test_eigenthings.py` — none
-of these cover `bulk_edge`/`conditioning` yet, since they were never
-validated before this pass; adding a regression test for the fixed
-`bulk_edge` estimator (e.g. on a small hand-built two-cluster spectrum) would
-be a reasonable follow-up but wasn't in scope here.
+`test_density_matches_exact_histogram` in `tests/test_eigenthings.py`, plus
+`test_bulk_edge_conditioning_converge_on_extended_fixture` in
+`tests/sweeps/` now covering `bulk_edge`/`conditioning`.

@@ -27,3 +27,12 @@ __pycache__/
 
 # Results
 results/
+
+# LaTeX build artifacts (reports/*.pdf is tracked, intermediates are not)
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz

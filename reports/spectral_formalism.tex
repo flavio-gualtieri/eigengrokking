@@ -1,0 +1,562 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage[strings]{underscore}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\R}{\mathbb{R}}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!50!black,
+    citecolor=blue!50!black,
+    pdftitle={Hessian Spectral Density Estimation: Formalism, Implementation, Observables},
+}
+
+\title{Hessian Spectral Density Estimation:\\
+Formalism, Implementation, and Observables}
+\author{eigengrokking}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note documents the spectral analysis module (\code{analysis/eigenthings.py},
+\code{analysis/spectral_observables.py}) used to track the loss Hessian's
+eigenvalue distribution over training. It covers, in order: the mathematical
+formalism (Hessian-vector products, Lanczos tridiagonalization, Stochastic
+Lanczos Quadrature), how the code implements that formalism, the eight scalar
+observables extracted per checkpoint and their exact code-level definitions,
+and how the two governing hyperparameters --- Lanczos depth \(m\) and probe
+count \(k\) --- trade off against estimation accuracy for each observable.
+The accuracy claims in Section~\ref{sec:accuracy} are empirical, taken from
+\code{reports/spectral_validation.md}, which validates the estimator against
+two exact-reference fixtures; see that document for the underlying sweeps.
+\end{abstract}
+
+\tableofcontents
+
+% ============================================================
+\section{Mathematical formalism}
+\label{sec:formalism}
+
+\subsection{Setup: the Hessian and its spectral measure}
+
+Let \(\theta \in \R^n\) be the trainable parameters of the model (flattened
+across all tensors) and \(\mathcal{L}(\theta)\) the scalar loss evaluated on
+a fixed batch. The object of interest is the Hessian
+\[
+H \;=\; \nabla^2_\theta \mathcal{L}(\theta) \;\in\; \R^{n\times n},
+\]
+a real symmetric matrix with eigendecomposition \(H = V\Lambda V^\top\),
+eigenvalues \(\lambda_1 \le \cdots \le \lambda_n\). Since \(H\) is
+\emph{not} a Gauss--Newton or Fisher approximation, it is generically
+indefinite: negative eigenvalues correspond to directions of negative
+curvature at \(\theta\).
+
+For \(n\) in the \(10^3\)--\(10^7\) range, forming \(H\) explicitly is
+infeasible. The quantity we actually want is the \emph{empirical spectral
+measure}
+\[
+\mu_H \;=\; \frac{1}{n}\sum_{i=1}^n \delta(\lambda - \lambda_i),
+\]
+which we only ever access indirectly, through two primitives: (i)
+Hessian-vector products \(v \mapsto Hv\), and (ii) an algorithm --
+Stochastic Lanczos Quadrature (SLQ) -- that turns a modest number of HVPs
+into an estimate of \(\mu_H\) and of linear functionals of it (trace,
+tail mass, entropy, \dots).
+
+\subsection{Hessian-vector products via double backpropagation}
+\label{sec:hvp}
+
+Pearlmutter's trick computes \(Hv\) exactly, without materializing \(H\),
+by differentiating the loss twice. Writing \(g(\theta) = \nabla_\theta
+\mathcal{L}(\theta)\),
+\[
+Hv \;=\; \nabla_\theta\!\left(g(\theta)^\top v\right),
+\]
+because \(\nabla_\theta (g^\top v) = \nabla_\theta\!\left(v^\top \nabla_\theta
+\mathcal{L}\right) = (\nabla^2_\theta \mathcal{L}) v = Hv\) (\(v\) held
+fixed, not a function of \(\theta\)). Concretely: one backward pass with
+\code{create_graph=True} produces \(g\) as a differentiable tensor; a second
+backward pass through the scalar \(g^\top v\) yields \(Hv\). This is the
+\emph{true} Hessian, not a Gauss--Newton/Fisher surrogate ---
+important here since the surrogate is positive semi-definite by
+construction and would zero out exactly the negative-curvature signal
+several observables below are built to detect.
+
+\subsection{Lanczos tridiagonalization}
+\label{sec:lanczos}
+
+Given a unit-norm starting vector \(q_1\), \(m\) steps of Lanczos build an
+orthonormal basis \(Q_m = [q_1 \mid \cdots \mid q_m]\) of the Krylov
+subspace \(\mathcal{K}_m(H, q_1) = \mathrm{span}\{q_1, Hq_1, \dots,
+H^{m-1}q_1\}\) in which \(H\) restricted to that subspace is tridiagonal:
+\[
+Q_m^\top H Q_m \;=\; T_m \;=\;
+\begin{pmatrix}
+\alpha_1 & \beta_1 & & \\
+\beta_1 & \alpha_2 & \beta_2 & \\
+ & \ddots & \ddots & \ddots \\
+ & & \beta_{m-1} & \alpha_m
+\end{pmatrix}.
+\]
+The basis and the tridiagonal entries are produced together by the
+three-term recurrence
+\[
+\alpha_i = q_i^\top H q_i, \qquad
+w_i = Hq_i - \alpha_i q_i - \beta_{i-1} q_{i-1}, \qquad
+\beta_i = \lVert w_i \rVert, \qquad
+q_{i+1} = w_i / \beta_i,
+\]
+with \(\beta_0 q_0 \equiv 0\). Each step costs exactly one HVP. In finite
+precision, orthogonality among the \(q_i\) decays after a few dozen steps,
+so \(m\) in the 50--100 range requires \emph{full reorthogonalization} ---
+each new \(w_i\) is Gram--Schmidt'd against every previously computed
+\(q_1,\dots,q_i\), not just the last one or two -- to keep \(T_m\) an
+accurate reduction of \(H\).
+
+\subsection{Stochastic Lanczos Quadrature}
+\label{sec:slq}
+
+Diagonalize the small \(m\times m\) matrix \(T_m = U \Theta U^\top\)
+(cheap: \(O(m^2)\)--\(O(m^3)\), on the CPU). Gauss quadrature theory says
+that for any sufficiently smooth scalar function \(f\),
+\[
+q_1^\top f(H) q_1 \;\approx\; \sum_{j=1}^m \tau_j^2\, f(\theta_j),
+\qquad \tau_j := U_{1j},
+\]
+where the \(\theta_j\) (eigenvalues of \(T_m\), the \emph{Ritz values}) are
+the quadrature \emph{nodes} and \(\tau_j^2\) (squared first components of
+\(T_m\)'s eigenvectors) are the quadrature \emph{weights}; \(\sum_j
+\tau_j^2 = 1\) since \(U\) is orthogonal. This is exact whenever \(H\)
+restricted to \(\mathcal{K}_m(H,q_1)\) captures the relevant spectral
+content (e.g.\ exactly, for any \(m \ge 1\), when \(f\) is affine -- see
+the trace estimator in Section~\ref{sec:trace}); more generally it is the
+degree-\((2m-1)\) moment-matching approximation to \(\int f\,d\mu_{q_1}\)
+for the measure \(\mu_{q_1}\) induced by \(q_1\).
+
+A single probe only sees \(H\) through one starting direction. Stochastic
+Lanczos Quadrature averages over \(k\) independent random probes
+\(q_1^{(1)}, \dots, q_1^{(k)}\), each a normalized Rademacher vector (i.i.d.\
+\(\pm1\) entries). Since \(\mathbb{E}[vv^\top] = I\) for such \(v\),
+\[
+\frac{1}{k}\sum_{l=1}^k \bigl(q_1^{(l)}\bigr)^{\!\top} f(H)\, q_1^{(l)}
+\;\xrightarrow[k\to\infty]{}\;
+\frac{1}{n}\operatorname{tr} f(H)
+\;=\; \int f(\lambda)\, d\mu_H(\lambda).
+\]
+Each probe \(l\) contributes a discrete measure \(\hat\mu^{(l)} =
+\sum_{j} \bigl(\tau_j^{(l)}\bigr)^2 \delta\bigl(\lambda -
+\theta_j^{(l)}\bigr)\); pooling all \(k\) probes with weight \(1/k\) each
+gives one atomic measure
+\(\hat\mu = \frac1k\sum_{l=1}^k \hat\mu^{(l)}\)
+that approximates \(\mu_H\). Every observable in Section~\ref{sec:observables}
+is a functional of this pooled \((\theta, w)\) atom set.
+
+\subsection{Kernel density estimate for the plotted spectrum}
+
+For the plotted density curve (not the scalar observables -- see
+Section~\ref{sec:pooling}), each atom is replaced by a Gaussian kernel of
+bandwidth \(\sigma\):
+\[
+\hat\phi(t) \;=\; \frac{1}{k}\sum_{l=1}^k \sum_{j=1}^m
+\bigl(\tau_j^{(l)}\bigr)^2\,
+\mathcal{N}\!\bigl(t;\, \theta_j^{(l)},\, \sigma^2\bigr),
+\qquad
+\mathcal{N}(t;\mu,\sigma^2) = \frac{1}{\sigma\sqrt{2\pi}}
+\exp\!\left(-\frac{(t-\mu)^2}{2\sigma^2}\right).
+\]
+
+% ============================================================
+\section{Implementation: how \code{eigenthings.py} applies the formalism}
+\label{sec:implementation}
+
+\subsection{The \code{Eigenthings} class}
+
+\code{Eigenthings.__init__} takes the model, a fixed \code{loss} tensor
+(already the result of one forward pass on a batch), and the parameter list
+\code{params}. It computes the first-order gradient once,
+\begin{quote}
+\code{self.grads = torch.autograd.grad(loss, params, create_graph=True, allow_unused=True)}
+\end{quote}
+This is the \(g(\theta)\) of Section~\ref{sec:hvp}, kept as a differentiable
+graph node. Because \(\mathcal{L}\) and hence \(g\) are fixed for the
+duration of one spectral snapshot, computing \(g\) once in
+\code{__init__} and reusing it across every \code{hvp()} call (rather than
+re-walking the whole backward pass per HVP) is what makes the many HVPs
+a Lanczos run needs affordable.
+
+\code{hvp(q)} implements Section~\ref{sec:hvp} on a flattened probe vector
+\(q \in \R^n\): \code{unpack_vec} reshapes \(q\) into one tensor per
+parameter (matching each \(p\)'s shape), \(g^\top v = \sum_p (g_p \cdot
+v_p).\mathrm{sum}()\) is accumulated, and a second \code{torch.autograd.grad}
+call differentiates that scalar back through \code{self.params} to produce
+\(Hv\) (again per-parameter, then re-flattened by \code{pack_list}). Missing
+gradients (\code{allow_unused=True}, for parameters the loss doesn't
+depend on) are treated as zero.
+
+\code{lanczos(v0)} runs the recurrence of Section~\ref{sec:lanczos} for
+\code{self.m} steps: \code{q}/\code{q_prev} track \(q_i, q_{i-1}\);
+\code{alpha}/\code{beta} accumulate \(\alpha_i,\beta_i\); \code{Q} keeps
+every basis vector generated so far. When \code{self.orthogonalize} is set
+(the production default), each new \(w\) is explicitly reduced against
+\emph{every} vector in \code{Q}, not just the most recent one --- the full
+reorthogonalization called out in Section~\ref{sec:lanczos}. The loop
+terminates early if \(\beta_i < 10^{-12}\) (the Krylov subspace has become
+invariant --- no new direction to explore), so the realized depth \(k =
+\code{len(alpha)}\) can be less than \code{self.m}. The tridiagonal \(T_m\)
+is assembled explicitly from \code{alpha}/\code{beta} and returned.
+
+\code{lanczos_quadrature(v0)} calls \code{lanczos}, moves the (small) \(T_m\)
+to CPU for \code{torch.linalg.eigh}, and reads off nodes
+\(\theta_j = \code{eigvals}\) and weights \(\tau_j^2 =
+\code{eigvecs[0, :]**2}\) exactly as in Section~\ref{sec:slq}.
+
+\code{density_from_lanczos(nodes, weights, t_grid, sigma)} evaluates the
+KDE sum of Section~\ref{sec:formalism} on an arbitrary grid, skipping atoms
+whose weight is negligible (\(|\tau_j^2| \le 10^{-14}\)) for efficiency.
+
+\subsection{Probe sampling: \code{rademacher_probe}}
+
+\code{rademacher_probe} draws \(\pm1\) entries via a CPU
+\code{torch.Generator} and only moves the result to the target device
+afterwards, because CUDA/MPS generators are not bitwise-interchangeable
+with the CPU one --- this keeps the probe sequence identical regardless of
+accelerator, which matters for reproducibility across runs/hardware.
+
+\subsection{\code{estimate_density}: orchestrating one spectral snapshot}
+\label{sec:estimate_density}
+
+\code{estimate_density(model, m, k, sigma_frac, loss, probe_seed, \ldots)}
+is the entry point used once per logged training step. It runs in two
+phases:
+
+\begin{enumerate}
+\item \textbf{Cheap top-eigenvalue pre-pass.} A single Rademacher probe
+(seeded from \code{probe_seed}, its own generator so it does not disturb
+the sequence used below) is run through \code{lanczos_quadrature} with a
+shallow depth \code{top_eig_probe_m} (default 20 -- see
+Section~\ref{sec:accuracy}, \code{top_eig} converges by \(m\ge20\)). The
+largest node gives a cheap estimate of \(|\lambda_{\max}|\). This exists
+solely to set the absolute KDE bandwidth: \(\sigma =
+\max(\code{sigma_frac} \cdot |\lambda_{\max}|,\, \code{eps})\), a
+\emph{fraction} of \(\lambda_{\max}\) rather than a fixed absolute value,
+since \(\lambda_{\max}\) itself can move by orders of magnitude over a
+training run and a fixed \(\sigma\) would make density plots incomparable
+across checkpoints.
+\item \textbf{Main \(k\)-probe, \(m\)-step pass.} The same
+\code{Eigenthings} instance (reusing its once-computed \code{grads}) is
+reconfigured to depth \code{m}, and a fresh generator reseeded from the
+\emph{same} \code{probe_seed} draws \(k\) Rademacher probes. Calling
+\code{estimate_density} repeatedly with the same \code{probe_seed}
+(e.g.\ once per checkpoint of a training run) therefore draws bit-identical
+probes every time, isolating parameter-driven spectral change across
+checkpoints from probe-sampling noise.
+\end{enumerate}
+The plotting grid \code{t_grid} spans \([\min(\text{nodes}) - 6\sigma,\;
+\max(\text{nodes}) + 6\sigma]\) at step \(\sigma/5\), clamped to
+\([200, 50000]\) points so that a very wide node range (e.g.\ right after
+the top-eig pre-pass makes \(\sigma\) very small) cannot silently blow the
+grid past a usable size. \code{SpectralEstimate} bundles both outputs: the
+KDE-smoothed \code{density}/\code{t_grid} (plotting only) and the raw,
+un-smoothed per-probe \code{probe_nodes}/\code{probe_weights}
+(everything in Section~\ref{sec:observables}).
+
+\subsection{Integration into the training loop}
+
+\code{training/loop.py} calls \code{estimate_density} on a schedule
+(\code{SpectralSchedule}, geometric-then-dense around the
+train/test-accuracy-gap transition), always against the \emph{same} fixed
+batch (\code{spectral_batch_size}, default 512, sampled once before
+training starts) so that, per snapshot, only \(\theta\) differs and neither
+the data nor the probes are confounds. The raw nodes/weights returned by
+\code{estimate_density} are passed straight into
+\code{compute_spectral_observables_with_stderr}
+(Section~\ref{sec:observables}), and both the point estimates and their
+stderrs are logged into the training history per checkpoint.
+
+% ============================================================
+\section{Observables}
+\label{sec:observables}
+
+All eight observables below are implemented in
+\code{analysis/spectral_observables.py}, \code{compute_spectral_observables},
+and are computed from the \emph{raw} pooled Ritz atoms, not the
+KDE-smoothed density --- the smoothing bandwidth would otherwise bias
+tail-sensitive quantities such as \code{top_eig} and outlier detection.
+
+\subsection{Pooling probes into one discrete measure}
+\label{sec:pooling}
+
+\code{_pool_probes} concatenates the \(k\) probes' \((\theta^{(l)},
+\tau^{(l)2})\) pairs into one atom set, dividing each probe's weights by
+\(k\) so the pooled weights sum to 1 overall (each probe contributes total
+mass \(1/k\), matching the SLQ average of Section~\ref{sec:slq}):
+\[
+\{(\theta_j, w_j)\}_{j=1}^{N}, \qquad N = \sum_{l=1}^k (\text{realized depth of probe } l),
+\qquad w_j = \tau_j^{(l)2}/k.
+\]
+Below, \(\lambda_{\max} := \theta_N\) after sorting ascending (the largest
+pooled node), and \(n\) denotes \code{n_params}, the true parameter count
+--- \emph{not} \(N\), which scales with \(m\) and \(k\) and would make
+several observables below drift with Lanczos depth/probe count rather than
+track the actual spectrum.
+
+\subsection{\code{top_eig}}
+Mathematically, the estimate of \(\lambda_{\max}(H)\). Code: the largest
+pooled node, \code{nodes[-1]} after sorting. Precise because it is read off
+the raw atoms rather than the KDE curve, which would blur/underestimate the
+tail.
+
+\subsection{\code{bulk_edge}}
+A robust threshold separating the low-curvature ``bulk'' of the spectrum
+from outlier eigenvalues, defined as a weighted median plus a multiple of
+the weighted median absolute deviation (MAD):
+\[
+\code{bulk_edge} \;=\; \mathrm{median}_w(\theta) + c\cdot 1.4826\cdot
+\mathrm{MAD}_w(\theta), \qquad c = \code{bulk_mad_multiplier} = 5,
+\]
+where \(\mathrm{median}_w\) and \(\mathrm{MAD}_w = \mathrm{median}_w(|\theta -
+\mathrm{median}_w(\theta)|)\) are computed against the \emph{weighted} CDF
+of the pooled atoms (\code{_weighted_quantile}, linear interpolation of
+\(q\) against \(\mathrm{cdf}_j = (\sum_{i\le j} w_i - \tfrac12 w_j)/\sum_i
+w_i\), i.e. each atom's cumulative-probability coordinate sits at its own
+mass's midpoint), not a plain \code{numpy.median} over the raw node values.
+The \(1.4826\) factor rescales MAD to be consistent with a Gaussian
+standard deviation. This weighting is not cosmetic: Section~\ref{sec:accuracy}
+documents that the unweighted version was found to be biased 30--50\% on a
+spectrum with a realistic bulk/outlier imbalance, because Lanczos node
+placement is moment-matching, not density-matching -- nodes cluster near
+spectral edges regardless of how much true probability mass sits there, so
+treating every node as equally likely (unweighted) systematically
+overweights the edges.
+
+\subsection{\code{outlier_count}}
+The number of \emph{distinct} eigenvalues sitting above \code{bulk_edge},
+as opposed to the number of Ritz values above it (Lanczos rediscovers the
+same true outlier eigenvalue as several near-identical Ritz values across
+different probes/depths). Code: take pooled nodes with \(\theta_j >
+\code{bulk_edge}\), sort, and count runs separated by gaps larger than
+\(\code{resolution} = \max(\code{resolution_frac}\cdot|\lambda_{\max}|,
+\code{eps})\) (default \(\code{resolution_frac}=0.05\)) -- i.e.\ the number
+of gaps exceeding \(\code{resolution}\), plus one.
+
+\subsection{\code{trace}}
+\label{sec:trace}
+The Hutchinson-via-Lanczos trace estimator,
+\[
+\widehat{\operatorname{tr}}(H) \;=\; n\sum_{j=1}^N w_j\,\theta_j.
+\]
+This follows directly from Section~\ref{sec:slq} with \(f(\lambda) =
+\lambda\): \(\mathbb{E}_v[v^\top H v] = \operatorname{tr}(H)\) for Rademacher
+\(v\), and \(q_1^\top H q_1 = \sum_j \tau_j^2 \theta_j\) is exact for
+\emph{any} \(m \ge 1\) --- it is the first-moment identity of Gauss
+quadrature (in fact \(q_1^\top H q_1 = \alpha_1\), the very first Lanczos
+coefficient). This is why, uniquely among the eight fields,
+\code{trace}'s accuracy is governed entirely by \(k\) (Monte Carlo/Hutchinson
+variance, \(O(k^{-1/2})\)) and is essentially insensitive to \(m\).
+
+\subsection{\code{spectral_entropy} and \code{effective_rank}}
+The Shannon entropy of a \emph{magnitude-reweighted} spectral measure. Model
+each of the \(n\) exact eigenvalues \(\lambda_i\) as carrying uniform prior
+mass \(1/n\), reweighted by \(|\lambda_i|\) (so directions with negligible
+curvature, positive or negative, don't count toward ``effective rank''):
+\[
+p_i \;=\; \frac{|\lambda_i|}{n Z}, \qquad
+Z := \frac1n\sum_{i=1}^n |\lambda_i| \;\approx\; \sum_{j=1}^N w_j |\theta_j|
+\quad\text{(pooled SLQ estimate of } \textstyle\frac1n\sum_i|\lambda_i|\text{)}.
+\]
+Then
+\[
+S \;=\; -\sum_{i=1}^n p_i \log p_i
+\;=\; \log(nZ) \;-\; \frac{1}{nZ}\sum_{i=1}^n |\lambda_i|\log|\lambda_i|
+\;\approx\; \log(nZ) \;-\; \frac{1}{Z}\sum_{j=1}^N w_j |\theta_j| \log|\theta_j|,
+\]
+using the same pooled-SLQ substitution for \(\frac1n\sum_i(\cdot)\) in the
+second term. This is exactly \code{spectral_entropy} in the code
+(\code{z = sum(weighted_abs)}, \code{cross_term = sum(weighted_abs *
+log_abs)}, \code{spectral_entropy = log(n_params*z) - cross_term/z}),
+computed in closed form off the raw atoms with no histogram binning, so
+there is no artificial cap on the result. \code{effective_rank} \(=
+e^S\) is the ``perplexity'' of \(p\): the number of eigen-directions
+(out of \(n\)) carrying non-negligible \(|\)curvature\(|\), regardless of
+sign. Because \(n\) (the true parameter count) rather than \(N\) (the
+pooled Ritz-node count, which scales with \(mk\)) appears in the \(\log(nZ)\)
+term, \(S\) and \(e^S\) are comparable across different \(m,k\) settings
+rather than drifting with them.
+
+\subsection{\code{negative_mass}}
+The probability mass at eigenvalues meaningfully below zero,
+\emph{margin-thresholded} rather than a raw \(\lambda<0\) count:
+\[
+\code{negative_mass} \;=\; N_\epsilon \;=\; \sum_{j:\, \theta_j < -\epsilon} w_j,
+\qquad \epsilon = \code{margin_c}\cdot|\lambda_{\max}|,\ \ \code{margin_c}=0.05.
+\]
+The margin exists because Lanczos produces spurious small-magnitude
+negative Ritz values immediately around a true eigenvalue near zero; a raw
+\(<0\) threshold counts that numerical noise as curvature evidence (see
+Section~\ref{sec:accuracy} for the measured effect). \code{margin_c} shares
+its default with \code{resolution_frac} (both are ``a small fraction of
+\(|\lambda_{\max}|\)'' length scales) but is an independently tunable knob:
+one sets a spectral resolution for clustering, the other a decision
+boundary for ``genuinely negative.''
+
+\subsection{\code{conditioning}}
+A cheap proxy for how far the extreme eigenvalue sits above the bulk,
+\[
+\code{conditioning} = \frac{\code{top_eig}}{\code{bulk_edge}},
+\]
+undefined (\code{NaN}) if \(|\code{bulk_edge}| \le \code{eps}\). Chosen over
+a fixed absolute threshold or a Marchenko--Pastur-style edge (which needs
+an aspect ratio not well-defined for a Hessian).
+
+\subsection{Error bars: \code{stderr} over probes}
+\code{compute_spectral_observables_with_stderr} returns
+\((\text{point}, \text{stderr})\): \code{point} pools all \(k\) probes (as
+above, the least-biased estimate); \code{stderr} recomputes every
+observable \(k\) times, once per single-probe atom set, and reports the
+standard error of the mean across those \(k\) values,
+\(\mathrm{sd}(\{x^{(l)}\}_{l=1}^k)/\sqrt{k}\) with \(\mathrm{ddof}=1\). This
+costs no extra HVPs (it reuses the already-computed per-probe atoms) and is
+a pragmatic uncertainty proxy rather than the literal standard error of
+every point estimate -- e.g.\ \code{top_eig} is a pooled \emph{max}, not a
+mean of per-probe maxes, so the point estimate is not the mean of the
+values whose spread \code{stderr} reports.
+
+% ============================================================
+\section{Accuracy: how \texorpdfstring{\(m\)}{m} and \texorpdfstring{\(k\)}{k} govern each observable}
+\label{sec:accuracy}
+
+\subsection{What \(m\) and \(k\) each control}
+
+\(m\) (Lanczos steps per probe, \code{spectral_m}) sets the depth of the
+Krylov subspace built per probe, i.e.\ \emph{algorithmic} convergence: how
+well the small \(T_m\)'s Ritz values approximate the true eigenvalues
+\(H\) has along that probe's Krylov direction. \(k\) (probe count,
+\code{spectral_k}) sets how many independent Rademacher directions are
+averaged, i.e.\ \emph{Monte Carlo} convergence of the Hutchinson-style
+average in Section~\ref{sec:slq}, governed by the CLT (\(O(k^{-1/2})\)
+error). These are different axes, and --- this is the central empirical
+finding of \code{reports/spectral_validation.md} --- different observables
+are bottlenecked by different axes, so no single \((m,k)\) is simultaneously
+``cheapest'' for every field. Total cost per spectral snapshot is
+\(\approx m \cdot k\) HVPs (one HVP per Lanczos step, per probe), and this
+snapshot recurs at every logged step of a training run, so \((m,k)\) is the
+dominant lever on the recurring cost of \code{run_spectral=True}.
+
+\subsection{Per-observable convergence}
+
+The table below summarizes the sweeps in \code{reports/spectral_validation.md}
+against two exact-reference fixtures: a $\sim$1026-parameter random-init
+MLP with a materialized Hessian (\code{tests/reference_hessian.py}), and an
+engineered quadratic-form fixture with the same parameter count but a
+production-like spectral dynamic range (exact \code{top_eig}\(=150\),
+\code{bulk_edge}\(=1.109\), \code{conditioning}\(=135.3\), i.e.\ \(\sim\)31\(\times\)
+wider than the first fixture), built specifically to exercise
+\code{bulk_edge}/\code{conditioning}, which the near-flat first fixture
+could not. \emph{The qualitative governing axis (\(m\) vs.\ \(k\)) is a
+property of the SLQ algorithm and should generalize; the specific numeric
+thresholds are shaped by each fixture's spectral gap and should not be
+copy-pasted onto a production run without their own check.}
+
+\begin{center}
+\begin{tabular}{@{}l l l l@{}}
+\toprule
+Observable & Governing axis & Min. \(m\) & Min. \(k\) \\
+\midrule
+\code{trace} & \(k\) (\(m\) irrelevant) & 1 & \(\ge100\) (\(\ge300\) tighter) \\
+\code{top_eig} & \(m\) & \(\ge20\) & 1 \\
+\code{negative_mass} (margin-thresh.) & \(m\) & \(\ge30\) (50 for full margin) & \(\ge30\) \\
+\code{spectral_entropy} & \(m\) & \(\ge20\) (30 w/ margin) & \(\ge30\) \\
+\code{effective_rank} & \(m\) & \(\ge20\) (30 w/ margin) & \(\ge30\) \\
+density (plotted curve) & \(m\), then \(k\) & \(\ge20\) (30 w/ margin) & \(\ge100\) \\
+\code{bulk_edge} (post-fix) & \(m\) & \(\ge75\) (100 for \(<\)0.2\%) & not swept \\
+\code{conditioning} (post-fix) & \(m\) & \(\ge75\) (100 for \(<\)0.2\%) & not swept \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Notable points behind the table:
+\begin{itemize}
+\item \textbf{\code{trace}} converges purely in \(k\) because, as shown in
+Section~\ref{sec:trace}, the underlying quadrature identity is exact in
+\(m\) for the first moment; all error is Hutchinson/Monte-Carlo variance.
+Measured RMS relative error (\(R=20\) independent repeats) was 21.0\% at
+\(k{=}10\), 4.6\% at \(k{=}100\), 2.2\% at \(k{=}1000\) --- \(\sqrt{k}\)
+convergence confirmed at a fitted log-log slope of \(-0.511\) against a
+\(-0.5\) theoretical rate. Reaching \(\sim\)1\% relative error would need
+\(k\) in the low thousands.
+\item \textbf{\code{negative_mass}} was originally defined with a raw
+\(\theta<0\) threshold and needed \(m \ge 200\) to converge (non-monotonically
+in \(m\)) --- traced to 193 of 1026 exact eigenvalues on the reference
+fixture sitting within 5\% of \(|\lambda_{\max}|\) of zero, a band where
+Lanczos needs substantial depth just to resolve the \emph{sign} correctly.
+Switching to the margin-thresholded definition of
+Section~\ref{sec:observables} (excluding that band by construction) dropped
+the requirement an order of magnitude, to \(m\ge30\)--50.
+\item \textbf{\code{bulk_edge}/\code{conditioning}} were the deepest
+\(m\)-governed fields once correctly estimated, but their original
+implementation (plain, \emph{unweighted} \code{numpy.median}/MAD over the
+pooled Ritz nodes) was found to be 30--50\% biased \emph{at every \(m\)
+tested, including \(m{=}300\)}, with negligible probe-to-probe spread --
+the signature of a biased estimator, not under-convergence, since raising
+\(m\) further would not have fixed it. This was an estimator bug (Section
+\ref{sec:observables}'s weighted-median fix), not a parameter-tuning
+problem; only after the fix does the \(m\ge75\)--100 threshold in the table
+reflect genuine Lanczos-depth convergence.
+\item \textbf{\code{spectral_entropy}/\code{effective_rank}} converge an
+order of magnitude faster in \(m\) than \code{negative_mass} despite
+reading the same pooled \(|\lambda|\) distribution, because the entropy's
+closed form (Section~\ref{sec:observables}) only needs Ritz mass to land in
+roughly the right coarse bin, whereas \code{negative_mass} needs the exact
+sign right at a zero crossing --- a much finer distinction that coarse
+convergence can't average over.
+\end{itemize}
+
+\subsection{Cost and production defaults}
+
+Current production defaults, \code{configs/base.py}:
+\[
+\code{spectral_m} = 50, \qquad \code{spectral_k} = 100,
+\]
+i.e.\ \(\approx 5{,}000\) HVPs per logged spectral snapshot. Cross-referencing
+against the table above: \(k{=}100\) is a deliberate compromise for
+\code{trace} (\(\sim\)5\% relative error, not the \(\sim\)1\% original
+target, since that would need \(k\) in the low thousands and \(k\) multiplies
+snapshot cost directly for a quantity logged repeatedly through training,
+not once); \(m{=}50\) comfortably clears the \(m\ge20\)--30 threshold shared
+by \code{top_eig}, \code{negative_mass}, \code{spectral_entropy}, and
+\code{effective_rank}, but sits \emph{below} the \(m\ge75\)--100 threshold
+the validation doc establishes for \code{bulk_edge}/\code{conditioning} to
+reach sub-1.5\%/sub-0.2\% relative error post-fix. (The inline comment on
+\code{spectral_m} in \code{configs/base.py} cites ``\(m{=}50\), \(k{=}300\)''
+as clearing every \(m\)-bound field, but the checked-in default sets
+\code{spectral_k=100}, not 300, and \code{spectral_validation.md}'s own
+summary table puts \(m\ge75\) --- not 50 --- as the requirement for
+\code{bulk_edge}/\code{conditioning}; this is a live discrepancy between
+the code comment and both the configured value and the validation doc's
+recommendation, worth resolving directly rather than assuming either side
+is authoritative.) \code{bulk_edge}/\code{conditioning} have also not been
+swept over \(k\) at all, so their behavior below the $\sim$0.2\% level with
+non-default \(k\) is unverified.
+
+Because cost scales as \(m\cdot k\), and \(k\) is set by \code{trace} while
+\(m\) is set (once \code{bulk_edge}/\code{conditioning} are the binding
+constraint) independently of \(k\), the two knobs should generally be tuned
+separately per analysis rather than raised together: if only \code{top_eig}
+or the entropy family is needed, \(m\approx20\)--30 with \(k\) as low as 1 is
+sufficient and far cheaper than the shared production default; if
+\code{trace} accuracy tighter than \(\sim\)5\% is needed for a specific run,
+that is a reason to raise \code{spectral_k} for that run rather than the
+global default, given the direct cost multiplier on every logged checkpoint.
+
+\end{document}
