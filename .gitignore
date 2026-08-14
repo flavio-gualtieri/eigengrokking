@@ -1,3 +1,7 @@
+# OS / editor
+.DS_Store
+.vscode/
+
 # Old stuff
 old_everything/
 
