@@ -216,15 +216,21 @@ def _plot_training_with_right_axis_plotly(
 
 
 # (filename suffix, history key, step key, y-axis label, stderr key or None)
+#
+# bulk_edge/conditioning are deliberately excluded here: the weighted
+# median/MAD estimator lands inside the near-zero degenerate spike on real
+# nets (>99% of directions null at effective_rank ~= 1910/220k), so its sign
+# is noise-determined rather than signal -- see "bulk_edge / conditioning"
+# in reports/spectral_validation.md. The fields are still computed and
+# logged (analysis/spectral_observables.py, training/loop.py); they're just
+# not promoted to a headline figure until the estimator is fixed.
 PLOT_VARIANTS = [
     ("_top_eig", "top_eig", "eig_steps", "Top Eigenvalue (λ_max)", "top_eig_stderr"),
-    ("_bulk_edge", "bulk_edge", "eig_steps", "Bulk Edge", "bulk_edge_stderr"),
     ("_outlier_count", "outlier_count", "eig_steps", "Outlier Count", "outlier_count_stderr"),
     ("_trace", "trace", "eig_steps", "Hessian Trace", "trace_stderr"),
     ("_spectral_entropy", "spectral_entropy", "eig_steps", "Spectral Entropy", "spectral_entropy_stderr"),
     ("_effective_rank", "effective_rank", "eig_steps", "Effective Rank", "effective_rank_stderr"),
     ("_negative_mass", "negative_mass", "eig_steps", "Negative-Eigenvalue Mass", "negative_mass_stderr"),
-    ("_conditioning", "conditioning", "eig_steps", "Conditioning (λ_max / bulk edge)", "conditioning_stderr"),
 
     ("_weight_norms", "norms", "train_steps", "Weight Norms", None),
     ("_last_layer_weight_norms", "last_layer_norms", "train_steps", "Last Layer Weight Norms", None),

@@ -12,7 +12,7 @@ directly rather than materialized. The first is executable as
 that don't belong in a fast test suite (multi-minute runtime) but are needed
 to answer "how much is enough."
 
-Companion to `reports/spectral_methodology.txt` (the pipeline design). This
+Companion to `reports/spectral_formalism.pdf` (the pipeline design). This
 is the validation, not a re-description of the method.
 
 ## Headline result
@@ -354,6 +354,16 @@ surprise, but it hasn't been checked.
 eight** — deeper than top_eig/negative_mass/entropy/rank/density (all
 m≥20-50), on par with where old-definition negative_mass used to sit before
 its own fix.
+
+**Demoted from headline figures/claims pending a production check:** the
+fixture-fixed estimator above is not yet validated as good enough on a real
+net. On the production wd-sweep, the weighted median lands inside the
+near-zero degenerate spike (>99% of directions are null at effective_rank ≈
+1910/220k), so the sign of `bulk_edge` — and therefore `conditioning` — is
+noise-determined rather than signal, evidenced by a negative reading at step
+1000. `project_io/graphing.py` no longer plots either field by default; the
+code and logging are unchanged (see above), this is a reporting exclusion,
+not a rollback of the fix.
 
 ## Summary table
 
