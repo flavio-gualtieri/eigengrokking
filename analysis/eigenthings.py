@@ -29,6 +29,10 @@ class Eigenthings:
         self.params = params
         self.orthogonalize = orthogonalize
 
+        # First-order grads w.r.t. a create_graph=True loss are what makes
+        # HVPs possible (Hv = d/dparams (grad . v)), and the loss is fixed
+        # for this snapshot -- so compute them once here rather than
+        # re-walking the whole backward pass on every hvp() call.
         self.grads = torch.autograd.grad(self.loss, self.params, create_graph=True, allow_unused=True)
 
 
