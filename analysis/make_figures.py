@@ -37,12 +37,15 @@ import numpy as np
 import pandas as pd
 
 from analysis.transitions import (
+    DEFAULT_ACCURACY_CSV,
+    TRAIN_ACC_LOW_THRESHOLD,
     Onset,
     add_corrected_quantities,
     add_robustness_variants,
     find_onset,
     load_and_join,
     load_modulus,
+    load_train_accuracy,
     sanity_checks,
 )
 
@@ -69,6 +72,21 @@ def _mark_onset(ax, onset: Onset, *, label: bool = True) -> None:
     if not onset.agree:
         ax.axvline(onset.fit_step, color=COLOR_ONSET, linestyle=":", linewidth=1, alpha=0.8,
                     label=f"onset (logistic fit) @ step {onset.fit_step:.0f}" if label else None)
+
+
+def _mark_low_train_acc(ax, df: pd.DataFrame, col: str, color: str, *, label: str = None) -> None:
+    """
+    Overlays hollow (open) markers on the points flagged `train_acc_low` by
+    load_train_accuracy() -- the line itself already carries every point;
+    this only adds a fill-state cue, so identity stays with color/line as
+    everywhere else in this figure and reliability rides on top of it,
+    never replacing it. A no-op if the join wasn't done or nothing's flagged.
+    """
+    mask = df.get("train_acc_low")
+    if mask is None or not mask.any():
+        return
+    ax.scatter(df.loc[mask, "step"], df.loc[mask, col], facecolors="none", edgecolors=color,
+               marker="o", s=40, linewidths=1.3, zorder=5, label=label)
 
 
 def plot_gate_figure(df: pd.DataFrame, onset: Onset, *, title: str,
@@ -115,6 +133,13 @@ def plot_gate_figure(df: pd.DataFrame, onset: Onset, *, title: str,
                      color=COLOR_EFF_RANK, linewidth=1.5, errorevery=ee, capsize=2,
                      label="effective_rank_rel")
 
+    thresh = df.attrs.get("train_acc_low_thresh")
+    low_label = f"train_acc < {thresh:g} (unreliable checkpoint)" if thresh is not None else None
+    _mark_low_train_acc(ax_bot, df, "trace_rel", COLOR_TRACE)
+    _mark_low_train_acc(ax_bot, df, "trace_corr_rel", COLOR_TRACE_CORR)
+    _mark_low_train_acc(ax_bot, df, "top_corr_rel", COLOR_TOP_CORR)
+    _mark_low_train_acc(ax_bot, df, "effective_rank_rel", COLOR_EFF_RANK, label=low_label)
+
     ax_bot.axhline(1.0, color="black", linewidth=0.75, alpha=0.4)
     _mark_onset(ax_bot, onset, label=False)
     ax_bot.set_yscale("log")
@@ -147,10 +172,13 @@ def plot_robustness_figure(df: pd.DataFrame, onset: Onset, *, title: str,
         ("trace_over_top_rel", COLOR_TOP_CORR, "trace_rel / top_eig_rel (norm-free)"),
         ("trace_llcorr_rel", COLOR_LL_NORM, "last-layer-norm corrected"),
     ]
+    thresh = df.attrs.get("train_acc_low_thresh")
+    low_label = f"train_acc < {thresh:g} (unreliable checkpoint)" if thresh is not None else None
     for ax, (col, color, label) in zip(axes, specs):
         stderr_col = f"{col}_stderr"
         ax.errorbar(df["step"], df[col], yerr=df.get(stderr_col), color=color, linewidth=2,
                      errorevery=ee, capsize=2, label=label)
+        _mark_low_train_acc(ax, df, col, color, label=(low_label if ax is axes[0] else None))
         ax.axhline(1.0, color="black", linewidth=0.75, alpha=0.4)
         _mark_onset(ax, onset, label=(ax is axes[0]))
         ax.set_yscale("log")
@@ -253,13 +281,31 @@ def write_summary(
         "",
         "## Sanity checks",
         "",
-        f"- Pre-onset log-residual (trace_rel vs. ||theta||^-2 prediction): "
-        f"mean {sanity['pre_onset_log_residual_mean']:.3f}, "
-        f"sd {sanity['pre_onset_log_residual_std']:.3f}, "
-        f"range {sanity['pre_onset_log_residual_range']:.3f}",
-        f"- Smoothness (mean |d(log)| per step): trace_rel="
-        f"{sanity['mean_abs_dlog_trace_rel']:.4f}, trace_corr_rel="
-        f"{sanity['mean_abs_dlog_trace_corr_rel']:.4f}",
+        f"- Pre-onset log-residual (trace_rel vs. ||theta||^-2 prediction), all {sanity['n_total']} "
+        f"checkpoints: mean {sanity['all']['pre_onset_log_residual_mean']:.3f}, "
+        f"sd {sanity['all']['pre_onset_log_residual_std']:.3f}, "
+        f"range {sanity['all']['pre_onset_log_residual_range']:.3f}",
+        f"- Smoothness (mean |d(log)| per step), all checkpoints: trace_rel="
+        f"{sanity['all']['mean_abs_dlog_trace_rel']:.4f}, trace_corr_rel="
+        f"{sanity['all']['mean_abs_dlog_trace_corr_rel']:.4f}",
+    ]
+    thresh = df.attrs.get("train_acc_low_thresh", TRAIN_ACC_LOW_THRESHOLD)
+    if sanity["n_excluded"]:
+        n_remain = sanity["n_total"] - sanity["n_excluded"]
+        excl = sanity["excl_train_acc_low"]
+        lines += [
+            f"- Same two checks with the {sanity['n_excluded']} checkpoint(s) below "
+            f"train_acc={thresh:g} dropped ({n_remain} remain): pre-onset log-residual "
+            f"mean {excl['pre_onset_log_residual_mean']:.3f}, sd {excl['pre_onset_log_residual_std']:.3f}, "
+            f"range {excl['pre_onset_log_residual_range']:.3f}; smoothness trace_rel="
+            f"{excl['mean_abs_dlog_trace_rel']:.4f}, trace_corr_rel={excl['mean_abs_dlog_trace_corr_rel']:.4f}.",
+        ]
+    else:
+        lines.append(
+            f"- No checkpoints fell below train_acc={thresh:g} in this window -- masked/unmasked "
+            "stats above coincide."
+        )
+    lines += [
         "",
         "## Headline",
         "",
@@ -320,6 +366,10 @@ def main() -> None:
     parser.add_argument("--x-max", type=float, default=None)
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
     parser.add_argument("--tag", default=None, help="Output filename stem (default: derived from run_dir)")
+    parser.add_argument("--accuracy-csv", type=Path, default=DEFAULT_ACCURACY_CSV,
+                         help="wd-sweep accuracy CSV to join train_accuracy from (scripts/build_wd_sweep_accuracy_csv.py)")
+    parser.add_argument("--train-acc-thresh", type=float, default=TRAIN_ACC_LOW_THRESHOLD,
+                         help="Flag checkpoints with train_accuracy below this as unreliable")
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir)
@@ -327,6 +377,7 @@ def main() -> None:
     tag = args.tag or f"p{modulus}_{run_dir.parent.name.replace('=', '')}_{run_dir.name.replace('=', '')}"
 
     df = load_and_join(args.parquet, run_dir)
+    df = load_train_accuracy(df, run_dir, csv_path=args.accuracy_csv, low_thresh=args.train_acc_thresh)
     onset = find_onset(df, modulus)
     print(f"onset: cross_step={onset.cross_step}, fit_step={onset.fit_step:.1f}, agree={onset.agree}")
 

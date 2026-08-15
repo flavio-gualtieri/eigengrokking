@@ -15,6 +15,7 @@ against a different p's parquet/run_dir needs no code change.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -24,6 +25,20 @@ import pandas as pd
 from scipy.optimize import curve_fit
 
 REQUIRED_CURVE_KEYS = ("train_steps", "norms", "last_layer_norms", "test_accuracies")
+
+DEFAULT_ACCURACY_CSV = Path("reports/wd_sweep_accuracy_curves.csv")
+TRAIN_ACC_LOW_THRESHOLD = 0.9
+
+# Mirrors scripts/build_wd_sweep_accuracy_csv.py's RUN_DIR_RE -- that script
+# is what wrote DEFAULT_ACCURACY_CSV in the first place, one row per
+# (modulus, depth, width, init, wd, seed, step) parsed straight off each
+# run's directory shape. Re-deriving the same key off `run_dir` here (rather
+# than off config_full.json) guarantees the lookup matches how the CSV's own
+# rows were tagged.
+RUN_DIR_META_RE = re.compile(
+    r"modulus=(?P<modulus>[\d.]+)/depth=(?P<depth>[\d.]+)/width=(?P<width>[\d.]+)/"
+    r"init=(?P<init>[\d.]+)/wd=(?P<wd>[\d.]+)/seed=(?P<seed>\d+)$"
+)
 
 # Spectral fields from analysis/spectral_observables.py that carry a
 # `<field>_stderr` column in the parquet (scripts/spectral_from_checkpoints.py
@@ -85,6 +100,58 @@ def load_and_join(parquet_path: Path, run_dir: Path) -> pd.DataFrame:
             f"(off the training log's grid): {bad}"
         )
     return df.sort_values("step").reset_index(drop=True)
+
+
+def load_train_accuracy(
+    df: pd.DataFrame, run_dir: Path, *,
+    csv_path: Path = DEFAULT_ACCURACY_CSV, low_thresh: float = TRAIN_ACC_LOW_THRESHOLD,
+) -> pd.DataFrame:
+    """
+    Step 1b: joins `train_accuracy` from the wd-sweep accuracy CSV
+    (scripts/build_wd_sweep_accuracy_csv.py) onto `df` by step, for this
+    run's (modulus, depth, width, init, wd, seed) -- identified off
+    `run_dir`'s own path shape (see RUN_DIR_META_RE), the same convention
+    that script used to tag the CSV's rows in the first place.
+
+    Adds `train_acc_low` (train_accuracy < `low_thresh`) alongside the raw
+    column. Training-accuracy dips mid-run do happen in this sweep --
+    AdamW + weight decay can transiently knock a small (train_frac=0.3)
+    training set below-threshold even after the run is well past that --
+    so a checkpoint landing mid-dip isn't an estimator artifact, but callers
+    of the spectral quantities at that step should know it's there.
+    """
+    m = RUN_DIR_META_RE.search(Path(run_dir).as_posix())
+    if not m:
+        raise ValueError(
+            f"{run_dir} doesn't match the modulus=/depth=/width=/init=/wd=/seed= path shape "
+            f"-- can't look up its rows in {csv_path}."
+        )
+    meta = m.groupdict()
+
+    acc = pd.read_csv(csv_path)
+    mask = (
+        (acc["modulus"] == int(meta["modulus"]))
+        & (acc["depth"] == int(meta["depth"]))
+        & (acc["width"] == int(meta["width"]))
+        & (acc["init"] == int(meta["init"]))
+        & np.isclose(acc["wd"], float(meta["wd"]), atol=1e-9)
+        & (acc["seed"] == int(meta["seed"]))
+    )
+    run_acc = acc.loc[mask, ["step", "train_accuracy"]]
+    if run_acc.empty:
+        raise ValueError(f"No rows in {csv_path} match {meta} (parsed from {run_dir}).")
+
+    df = df.merge(run_acc, on="step", how="left", validate="one_to_one")
+    if df["train_accuracy"].isna().any():
+        bad = df.loc[df["train_accuracy"].isna(), "step"].tolist()
+        raise ValueError(
+            f"{len(bad)} checkpoint step(s) have no train_accuracy row in {csv_path} "
+            f"for this run: {bad}"
+        )
+    df["train_acc_low"] = df["train_accuracy"] < low_thresh
+    df = df.sort_values("step").reset_index(drop=True)
+    df.attrs["train_acc_low_thresh"] = float(low_thresh)
+    return df
 
 
 @dataclass
@@ -220,35 +287,76 @@ def add_robustness_variants(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def sanity_checks(df: pd.DataFrame, onset: Onset) -> dict:
+def _pre_onset_and_smoothness_stats(sub: pd.DataFrame, onset: Onset) -> dict:
+    """(a) + (b) of sanity_checks(), computed over whatever subset of rows `sub` is."""
+    s: dict = {}
+
+    # (a) does the norm account for the pre-onset trace rise, row by row?
+    pre = sub[sub["step"] <= onset.cross_step]
+    if len(pre) >= 2:
+        resid = np.log(pre["trace_rel"]) - np.log(pre["wnorm_pred"])
+        s["pre_onset_log_residual_mean"] = float(resid.mean())
+        s["pre_onset_log_residual_std"] = float(resid.std())
+        s["pre_onset_log_residual_range"] = float(resid.max() - resid.min())
+    else:
+        s["pre_onset_log_residual_mean"] = float("nan")
+        s["pre_onset_log_residual_std"] = float("nan")
+        s["pre_onset_log_residual_range"] = float("nan")
+
+    # (b) is the corrected series smoother than the raw one?
+    for c in ["trace_rel", "trace_corr_rel"]:
+        s[f"mean_abs_dlog_{c}"] = (
+            float(np.abs(np.diff(np.log(sub[c]))).mean()) if len(sub) >= 2 else float("nan")
+        )
+    return s
+
+
+def _print_stats(s: dict) -> None:
+    print(
+        "  pre-onset log-residual (trace_rel vs. ||theta||^-2 prediction): mean %.3f, sd %.3f, range %.3f"
+        % (s["pre_onset_log_residual_mean"], s["pre_onset_log_residual_std"], s["pre_onset_log_residual_range"])
+    )
+    for c in ["trace_rel", "trace_corr_rel"]:
+        print(f"  {c} mean |d(log)| per step: {s[f'mean_abs_dlog_{c}']:.4f}")
+
+
+def sanity_checks(df: pd.DataFrame, onset: Onset, *, exclude_col: str = "train_acc_low") -> dict:
     """
     Step 4: the three checks the spec calls for, run before anyone looks
     at a plot. Prints a human-readable report and returns the same numbers
     for programmatic use (e.g. embedding in the auto-generated figure
     summary -- see analysis/make_figures.py).
+
+    (a) and (b) are reported two ways when `exclude_col` is present (see
+    load_train_accuracy()): once over every checkpoint (`report["all"]`),
+    once with train-accuracy-dip checkpoints dropped
+    (`report["excl_train_acc_low"]`) -- a checkpoint landing mid-dip isn't
+    an estimator bug, but it can pull the pre-onset residual/smoothness
+    numbers around, so both views get reported rather than one silently
+    picked. If `exclude_col` isn't present, both keys hold the same
+    all-checkpoints numbers and `n_excluded` is 0.
     """
     ref = df.attrs.get("ref_index")
     if ref is None:
         raise ValueError("Call add_corrected_quantities() before sanity_checks().")
 
-    report: dict = {}
+    report: dict = {"n_total": int(len(df))}
 
-    # (a) does the norm account for the pre-onset trace rise, row by row?
-    pre = df[df["step"] <= onset.cross_step]
-    resid = np.log(pre["trace_rel"]) - np.log(pre["wnorm_pred"])
-    report["pre_onset_log_residual_mean"] = float(resid.mean())
-    report["pre_onset_log_residual_std"] = float(resid.std())
-    report["pre_onset_log_residual_range"] = float(resid.max() - resid.min())
-    print(
-        "pre-onset log-residual: mean %.3f, sd %.3f, range %.3f"
-        % (resid.mean(), resid.std(), resid.max() - resid.min())
-    )
+    report["all"] = _pre_onset_and_smoothness_stats(df, onset)
+    print(f"sanity checks over all {report['n_total']} checkpoint(s):")
+    _print_stats(report["all"])
 
-    # (b) is the corrected series smoother than the raw one?
-    for c in ["trace_rel", "trace_corr_rel"]:
-        step_var = float(np.abs(np.diff(np.log(df[c]))).mean())
-        report[f"mean_abs_dlog_{c}"] = step_var
-        print(f"{c} mean |d(log)| per step: {step_var:.4f}")
+    if exclude_col in df.columns:
+        n_excluded = int(df[exclude_col].sum())
+        kept = df.loc[~df[exclude_col]]
+        report["n_excluded"] = n_excluded
+        report["excl_train_acc_low"] = _pre_onset_and_smoothness_stats(kept, onset)
+        print(f"sanity checks excluding {n_excluded} checkpoint(s) with train_acc < threshold "
+              f"({len(kept)} remain):")
+        _print_stats(report["excl_train_acc_low"])
+    else:
+        report["n_excluded"] = 0
+        report["excl_train_acc_low"] = report["all"]
 
     # (c) is step-to-step scatter above the estimator's own noise floor?
     cols = [c for c in ["step", "top_eig", "top_eig_stderr", "trace", "trace_stderr"] if c in df.columns]
