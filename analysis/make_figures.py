@@ -366,6 +366,8 @@ def main() -> None:
     parser.add_argument("--x-max", type=float, default=None)
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
     parser.add_argument("--tag", default=None, help="Output filename stem (default: derived from run_dir)")
+    parser.add_argument("--pdf", action="store_true",
+                         help="Also save the two-panel gate figure as gate_<tag>.pdf (for LaTeX inclusion)")
     parser.add_argument("--accuracy-csv", type=Path, default=DEFAULT_ACCURACY_CSV,
                          help="wd-sweep accuracy CSV to join train_accuracy from (scripts/build_wd_sweep_accuracy_csv.py)")
     parser.add_argument("--train-acc-thresh", type=float, default=TRAIN_ACC_LOW_THRESHOLD,
@@ -391,6 +393,10 @@ def main() -> None:
     fig = plot_gate_figure(df, onset, title=title, x_min=args.x_min, x_max=args.x_max)
     fig_path = args.out_dir / f"gate_{tag}.png"
     fig.savefig(fig_path, dpi=200)
+    if args.pdf:
+        pdf_path = args.out_dir / f"gate_{tag}.pdf"
+        fig.savefig(pdf_path)
+        print(f"Wrote {pdf_path}")
     plt.close(fig)
     print(f"Wrote {fig_path}")
 
