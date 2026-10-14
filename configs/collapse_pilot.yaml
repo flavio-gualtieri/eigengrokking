@@ -1,0 +1,39 @@
+# Phase 1 pilot: where do the post-grokking test-accuracy collapses of the
+# p=91 sweep (reports/sweep_summary.md) come from? Same model, data and
+# optimizer as configs/mod91_wd_sweep.yaml, at wd=1.0 and init=1, for 30k
+# steps. scripts/run_collapse_pilot_array.sh runs four arms x 10 seeds on top
+# of this: these settings, adam_beta2=0.98, adam_beta2=0.98 with grad_clip=1.0,
+# and these settings in float64.
+#
+# No checkpoints: everything the comparison needs (accuracy, loss, norms, grad
+# and update norms, max |logit|, softmax saturation) is logged every 100 steps.
+#
+#   python -m eigengrok.train --config configs/collapse_pilot.yaml --set seed=0 output_dir=runs/collapse_pilot/A_default
+task: MODULAR
+modulus: 91
+train_frac: 0.3
+output_dim: 91
+depth: 1
+width: 128
+num_heads: 4
+activation: GELU
+initialization_scale: 1.0
+
+optimizer: AdamW
+lr: 1.0e-3
+weight_decay: 1.0
+adam_beta1: 0.9
+adam_beta2: 0.999
+grad_clip: null
+loss_function: CrossEntropy
+batch_size: 8192          # > 91**2 * 0.3 (~2484): full-batch
+optimization_steps: 30000
+
+log_every: 100
+eval_every: 100
+checkpoint_every: 0       # none
+
+run_spectral: false
+output_dir: runs/collapse_pilot   # never results/: the same init/wd/seed path would overwrite the sweep's runs
+seed: 0
+dtype: float32

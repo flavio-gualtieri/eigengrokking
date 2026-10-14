@@ -92,3 +92,48 @@ def compute_loss(
         return (total / max(seen, 1)).item()
     finally:
         network.train(was_training)
+
+@torch.no_grad()
+def compute_logit_stats(
+    network,
+    loader,
+    device,
+    N=None,
+    saturation_tol: float = 1e-7,
+    ):
+    """
+    (max |logit|, fraction of examples with a saturated softmax) over the
+    first N examples of `loader`. Saturated: max softmax probability
+    > 1 - saturation_tol. The softmax is computed in the logits' own dtype,
+    as the cross-entropy loss is, and only the comparison is done in float64.
+    In float32, a probability that close to 1 is stored as 1 or one rounding
+    step below it, so the example's gradient is mostly lost to rounding
+    (softmax collapse); in float64 it is not.
+    """
+    was_training = network.training
+    network.eval()
+    try:
+        max_abs = 0.0
+        saturated = 0
+        seen = 0
+
+        for x, labels in loader:
+            x = x.to(device, non_blocking=True)
+            if not x.is_floating_point():
+                x = x.float()
+
+            logits = network(x)
+            take = labels.size(0) if N is None else min(labels.size(0), N - seen)
+            logits = logits[:take]
+
+            max_abs = max(max_abs, logits.abs().max().item())
+            p_max = torch.softmax(logits, dim=1).amax(dim=1)
+            saturated += int((p_max.double() > 1 - saturation_tol).sum().item())
+            seen += take
+
+            if N is not None and seen >= N:
+                break
+
+        return max_abs, saturated / max(seen, 1)
+    finally:
+        network.train(was_training)

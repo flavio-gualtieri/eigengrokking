@@ -59,12 +59,15 @@ class ExperimentConfig:
     optimizer: str = "AdamW"
     lr: float = 1e-3
     weight_decay: float = 0.01
+    adam_beta1: float = 0.9            # Adam/AdamW only; both betas default to PyTorch's
+    adam_beta2: float = 0.999
+    grad_clip: float | None = None     # max global gradient norm per step (clip_grad_norm_); None = no clipping
     loss_function: str = "CrossEntropy"
 
     # Logging/saving
     log_every: int = 150
     eval_every: int = 1000
-    checkpoint_every: int = 1000  # independent of eval_every -- see eigengrok/train/loop.py
+    checkpoint_every: int = 1000  # independent of eval_every -- see eigengrok/train/loop.py; 0 = no checkpoints
     output_dir: str = field(default_factory=lambda: os.environ.get("EIGENGROK_OUTPUT_DIR", "./results"))
     seed: int = 0
     dtype: str = "float32"
@@ -118,12 +121,18 @@ def torch_dtype(name: str) -> torch.dtype:
 
 _TRUE = {"true", "yes", "1"}
 _FALSE = {"false", "no", "0"}
+_NONE = {"none", "null", ""}
 
 
 def _coerce(key: str, type_name: str, value: Any) -> Any:
     """Coerces one config value to its dataclass field type (given as a string under postponed annotations)."""
     if value is None:
         return None
+    optional = type_name.endswith(" | None")
+    if optional:
+        if isinstance(value, str) and value.strip().lower() in _NONE:
+            return None
+        type_name = type_name.removesuffix(" | None")
     try:
         if type_name == "bool":
             if isinstance(value, bool):

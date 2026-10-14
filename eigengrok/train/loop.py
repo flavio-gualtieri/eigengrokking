@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from tqdm.auto import tqdm
 
-from eigengrok.train.metrics import compute_accuracy, compute_loss
+from eigengrok.train.metrics import compute_accuracy, compute_logit_stats, compute_loss
 from eigengrok.hessian.snapshot import fixed_eval_batch, hessian_snapshot
 
 from eigengrok.registry import OPTIMIZERS, ACTIVATIONS, LOSSES
@@ -55,6 +55,13 @@ def _weight_norms(model: torch.nn.Module) -> tuple[float, float]:
     return float(torch.sqrt(total).item()), float(torch.sqrt(last).item())
 
 
+def _optimizer_kwargs(cfg) -> dict:
+    """Optimizer-specific settings from the config: the betas for the Adam family."""
+    if cfg.optimizer in ("Adam", "AdamW"):
+        return {"betas": (cfg.adam_beta1, cfg.adam_beta2)}
+    return {}
+
+
 def _to_float(x) -> float:
     if torch.is_tensor(x):
         return float(x.detach().cpu().item())
@@ -84,7 +91,8 @@ def run_experiment(task) -> Dict[str, Any]:
     if cfg.loss_function not in LOSSES:
         raise ValueError(f"Unsupported loss '{cfg.loss_function}'. Options: {list(LOSSES.keys())}")
 
-    opt = OPTIMIZERS[cfg.optimizer](model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    opt = OPTIMIZERS[cfg.optimizer](model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay,
+                                    **_optimizer_kwargs(cfg))
 
     data = task.build_data()
     train_loader = data["train_loader"]
@@ -128,15 +136,36 @@ def run_experiment(task) -> Dict[str, Any]:
             loss = task.compute_training_loss(logits, labels, device)
 
             loss.backward()
+
+            log_step = ((steps % cfg.log_every == 0) and (steps > 0)) or (steps == 1)
+            if log_step or cfg.grad_clip is not None:
+                # Global gradient norm of this step, before any clipping
+                # (max_norm=inf only measures it).
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), cfg.grad_clip if cfg.grad_clip is not None else float("inf"))
+            if log_step:
+                params_before = [p.detach().clone() for p in model.parameters()]
+
             opt.step()
 
-            # Log metrics
-            if ((steps % cfg.log_every == 0) and (steps > 0)) or (steps == 1):
+            # Log metrics. The gradient and update norms are of the step just
+            # taken; everything else is evaluated after it.
+            if log_step:
                 tr_loss = compute_loss(model, train_eval_loader, cfg.loss_function, device, N=len(train_ds), dataset_name=None)
                 tr_acc = compute_accuracy(model, train_eval_loader, device, N=len(train_ds), dataset_name=None)
                 wn, lwn = _weight_norms(model)
-                grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf")).item()
-                history.setdefault("grad_norms", []).append(grad_norm)
+                # Every DataLoader iterator draws a seed from the global CPU RNG, which also
+                # drives the training loader's shuffle: fork it so this extra pass leaves the
+                # training run bitwise identical to one that doesn't log these.
+                with torch.random.fork_rng(devices=[]):
+                    max_logit, frac_saturated = compute_logit_stats(model, train_eval_loader, device, N=len(train_ds))
+                with torch.no_grad():
+                    update_norm = torch.sqrt(sum(((p.detach() - p0) ** 2).sum()
+                                                 for p, p0 in zip(model.parameters(), params_before))).item()
+                history.setdefault("grad_norms", []).append(grad_norm.item())
+                history.setdefault("update_norms", []).append(update_norm)          # ||theta_after - theta_before||
+                history.setdefault("max_abs_logits", []).append(max_logit)          # over the training set
+                history.setdefault("frac_saturated", []).append(frac_saturated)     # p_max > 1 - 1e-7, training set
 
                 history["train_losses"].append(tr_loss)
                 history["train_accuracies"].append(tr_acc)
@@ -167,7 +196,7 @@ def run_experiment(task) -> Dict[str, Any]:
             # Previously shared both with the eval block above, so a
             # checkpoint disk-write failure could silently skip eval -- checkpointing
             # is pure I/O and shouldn't be able to take eval state down with it.
-            if ((steps % cfg.checkpoint_every == 0) and (steps > 0)) or (steps == 1):
+            if cfg.checkpoint_every > 0 and (((steps % cfg.checkpoint_every == 0) and (steps > 0)) or (steps == 1)):
                 try:
                     ckpt_path = dirs["ckpt"] / f"checkpoint_step{steps}.pt"
                     save_checkpoint(
