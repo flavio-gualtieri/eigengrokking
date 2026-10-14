@@ -13,11 +13,6 @@ set -euo pipefail
 
 cd "$SLURM_SUBMIT_DIR"
 
-module load miniforge
-set +u
-mamba activate /gpfs/scratch/qp252676/globus/envs/grok-env
-set -u
+source scripts/slurm_env.sh
 
-python -c "import pytest" 2>/dev/null || pip install --quiet pytest
-
-python -m pytest -x -q "$@"
+OMP_NUM_THREADS=1 python -m pytest -x -q "$@"

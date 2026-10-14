@@ -1,6 +1,17 @@
 # Spectral module validation: best `m`, `k` per observable
 
-Validates `analysis/eigenthings.py` / `analysis/spectral_observables.py`
+> **Historical.** This documents the previous estimator (`eigenthings.py` /
+> `spectral_observables.py`, last present at commit `9bf5fbe`, e.g.
+> `git show 9bf5fbe:eigengrok/hessian/eigenthings.py`), which produced the
+> parquets in `reports/spectra/`. It was replaced by `eigengrok/hessian/`
+> (operators.py, lanczos.py, spectrum.py). The quadrature, the
+> effective-rank closed form and the margin-thresholded negative mass carry
+> over unchanged. `bulk_edge`/`conditioning` and the cluster-based outlier
+> count were dropped. Current tests: `tests/test_hessian.py`; accuracy on a
+> real network and continuity with this estimator:
+> `reports/hessian_validation.md`.
+
+Validates `eigengrok/hessian/eigenthings.py` / `eigengrok/hessian/spectral_observables.py`
 against two exact-reference fixtures: a tiny MLP (input=10, hidden=(60,),
 output=6, Tanh, ~1026 params, CrossEntropy, fixed seed), where the full
 Hessian is materialized column-by-column via HVP
@@ -17,7 +28,7 @@ is the validation, not a re-description of the method.
 
 ## Headline result
 
-The original production defaults (`configs/base.py`: `spectral_m=90`,
+The original production defaults (`eigengrok/config.py`: `spectral_m=90`,
 `spectral_k=16`) under-converged two of the six observables originally
 measured, and a later pass — extending the fixture to a production-like
 spectral dynamic range (see "Extended fixture" below) to finally validate
@@ -42,10 +53,10 @@ observables**, which is exactly why one `(m, k)` production default
 couldn't serve all fields equally well — and why, even after the
 negative_mass fix, `k` still needs to move independently of `m` for trace's
 sake. `bulk_edge`/`conditioning` add a third axis: no `(m, k)` fixes a wrong
-formula — that needed a code change (`analysis/spectral_observables.py`),
+formula — that needed a code change (`eigengrok/hessian/spectral_observables.py`),
 not a bigger sweep.
 
-Based on these findings, `configs/base.py` keeps `spectral_m=100`,
+Based on these findings, `eigengrok/config.py` keeps `spectral_m=100`,
 `spectral_k=100` — but the *justification* changes: `m=100` used to be a
 round-number margin above what the original six fields needed; it's now the
 minimum that gets the newly-fixed `bulk_edge`/`conditioning` under ~0.2%. See
@@ -72,7 +83,7 @@ outlier eigenvalue sits above the bulk, the regime a real net shows once it
 starts fitting/sharpening. Two options that both add free parameters to
 justify (train a net for some number of steps; or reuse the toy MLP but pick
 a training recipe) were passed over for a fixture where the exact spectrum
-is chosen directly, not approximated: `analysis/eigenthings.py`'s `hvp`
+is chosen directly, not approximated: `eigengrok/hessian/eigenthings.py`'s `hvp`
 differentiates a `loss` tensor that's handed in fully-formed — `estimate_density`
 never calls `model.forward()` — so `loss` doesn't need to come from a neural
 net at all. A quadratic form `loss = 0.5 * theta^T M theta` (`theta` a bare
@@ -173,7 +184,7 @@ exact eigenvalues on this fixture sit in `[-0.0436, 0)` — within 5% of
 resolve the sign of Ritz values that close to the crossing; small-m runs
 were mostly measuring Lanczos noise in that band, not real signal.
 
-**Fix:** redefined as margin-thresholded (`analysis/spectral_observables.py`,
+**Fix:** redefined as margin-thresholded (`eigengrok/hessian/spectral_observables.py`,
 `SpectralObservables.negative_mass`): `N_epsilon = P(lambda < -epsilon)`,
 `epsilon = margin_c * |top_eig|` (default `margin_c=0.05`, shared default
 with `resolution_frac` though independently tunable). This is an exact
@@ -206,7 +217,7 @@ negative_mass — but converge an order of magnitude faster.
 
 **Note on the numbers below:** `spectral_entropy`/`effective_rank` were
 originally computed from a 20-bin histogram of `|lambda|`; that's since been
-replaced with a closed-form calculation (`analysis/spectral_observables.py`)
+replaced with a closed-form calculation (`eigengrok/hessian/spectral_observables.py`)
 that removes an artificial cap the histogram put on `effective_rank`
 (entropy of an N-bin histogram is bounded by `log(N)`, so `effective_rank`
 could never exceed ~N regardless of the model's actual number of curved
@@ -255,7 +266,7 @@ the `zero_frac` diagnostic below it):
 **`zero_frac`** (`tests/sweeps/test_bulk_edge_conditioning_sweep.py`): the
 weighted fraction of pooled Ritz mass with `|lambda| < 1e-3 * |top_eig|`
 (0.15 here) — a diagnostic for whether entropy's `log(max(abs_nodes, eps))`
-term (analysis/spectral_observables.py) is being computed mostly from
+term (eigengrok/hessian/spectral_observables.py) is being computed mostly from
 values close enough to zero that `log` is numerically touchy. It settles
 around **~50%**, which is exactly what this fixture's construction predicts
 (the bulk is `Uniform(-0.3, 0.3)`, so half of it by construction lies within
@@ -323,7 +334,7 @@ fixture); a large, `m`-independent bias on any spectrum with a big
 bulk/outlier mass imbalance (this fixture, and presumably any real net once
 it develops a few sharp directions against a broad low-curvature bulk).
 
-**Fix** (`analysis/spectral_observables.py`, `_weighted_quantile`): replace
+**Fix** (`eigengrok/hessian/spectral_observables.py`, `_weighted_quantile`): replace
 both `np.median` calls with a weight-respecting weighted quantile (linear
 interpolation on the weighted CDF, atoms placed at their mass's midpoint),
 matching what SLQ's `(node, weight)` pairs actually represent — the same
@@ -361,7 +372,7 @@ net. On the production wd-sweep, the weighted median lands inside the
 near-zero degenerate spike (>99% of directions are null at effective_rank ≈
 1910/220k), so the sign of `bulk_edge` — and therefore `conditioning` — is
 noise-determined rather than signal, evidenced by a negative reading at step
-1000. `project_io/graphing.py` no longer plots either field by default; the
+1000. `eigengrok/plotting/training_curves.py` no longer plots either field by default; the
 code and logging are unchanged (see above), this is a reporting exclusion,
 not a rollback of the fix.
 
@@ -405,7 +416,7 @@ entropy family, there'd have been a case for lowering `spectral_m` back down
 toward 50-75 for cost; instead the fixed bulk_edge/conditioning happen to
 need exactly what's already configured.
 
-`configs/base.py` keeps **`spectral_m=100`, `spectral_k=100`**. `k=100` is
+`eigengrok/config.py` keeps **`spectral_m=100`, `spectral_k=100`**. `k=100` is
 still a deliberate compromise, not the "best k" row above (k≥300 for
 tighter trace accuracy, and the original ~1% target needs k in the
 thousands): `k` multiplies the per-checkpoint HVP cost directly (cost ≈ m·k

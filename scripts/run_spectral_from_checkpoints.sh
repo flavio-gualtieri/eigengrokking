@@ -6,7 +6,7 @@
 #       scripts/run_spectral_from_checkpoints.sh
 #
 # RUN_DIR must be a run's base directory (contains checkpoints/ and
-# config_full.json -- see project_io/dir_making.py). STEPS is either
+# config_full.json -- see eigengrok/outputs.py). STEPS is either
 # "start:stop:stride" or a comma-separated list, per
 # `python scripts/spectral_from_checkpoints.py --help`.
 
@@ -26,10 +26,7 @@ set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 mkdir -p logs
 
-module load miniforge
-set +u
-mamba activate /gpfs/scratch/qp252676/globus/envs/grok-env
-set -u
+source scripts/slurm_env.sh
 
 : "${RUN_DIR:?RUN_DIR must be set (exported via sbatch --export)}"
 : "${STEPS:?STEPS must be set (exported via sbatch --export)}"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs analysis/make_figures.py (the gate figure) as a single CPU SLURM job.
+# Runs eigengrok/analysis/make_figures.py (the gate figure) as a single CPU SLURM job.
 # No GPU needed -- this only reads a committed spectral parquet plus the
 # run's training-curve npz (see reports/spectra/README.md).
 #
@@ -9,7 +9,7 @@
 #
 # RUN_DIR must be a run's base directory (contains checkpoints/,
 # config_full.json, figures/training_data_*.npz -- see
-# project_io/dir_making.py). PARQUET is produced by
+# eigengrok/outputs.py). PARQUET is produced by
 # scripts/spectral_from_checkpoints.py (see scripts/run_spectral_from_checkpoints.sh).
 
 #SBATCH -J make_figures
@@ -26,10 +26,7 @@ set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 mkdir -p logs
 
-module load miniforge
-set +u
-mamba activate /gpfs/scratch/qp252676/globus/envs/grok-env
-set -u
+source scripts/slurm_env.sh
 
 : "${PARQUET:?PARQUET must be set (exported via sbatch --export)}"
 : "${RUN_DIR:?RUN_DIR must be set (exported via sbatch --export)}"
@@ -37,4 +34,4 @@ set -u
 echo "Host: $(hostname)"
 echo "parquet=${PARQUET} run_dir=${RUN_DIR}"
 
-python -m analysis.make_figures "${PARQUET}" "${RUN_DIR}"
+python -m eigengrok.analysis.make_figures "${PARQUET}" "${RUN_DIR}"

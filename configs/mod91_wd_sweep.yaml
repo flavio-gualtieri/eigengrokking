@@ -1,0 +1,29 @@
+# Base config of the p=91 weight-decay sweep whose accuracy curves are in
+# reports/wd_sweep_accuracy_curves.csv (scripts/submit_wd_sweep.sh varies
+# weight_decay, initialization_scale and seed on top of this):
+#
+#   python -m eigengrok.train --config configs/mod91_wd_sweep.yaml \
+#       --set weight_decay=0.6 initialization_scale=1 seed=0
+task: MODULAR
+modulus: 91
+train_frac: 0.3
+output_dim: 91
+depth: 1
+width: 128
+num_heads: 4
+activation: GELU
+initialization_scale: 1.0
+
+optimizer: AdamW
+lr: 1.0e-3
+weight_decay: 1.0
+loss_function: CrossEntropy
+batch_size: 8192          # > 91**2 * 0.3 (~2484): full-batch
+optimization_steps: 150000
+
+log_every: 100
+eval_every: 100
+checkpoint_every: 100
+
+run_spectral: false       # spectra are computed afterwards from checkpoints (scripts/spectral_from_checkpoints.py)
+seed: 0

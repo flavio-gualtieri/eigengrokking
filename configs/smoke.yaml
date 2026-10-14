@@ -1,0 +1,32 @@
+# End-to-end smoke run (about a minute on one CPU core): a tiny transformer
+# on modular addition, with live Hessian spectral snapshots, writing every
+# output the full pipeline writes.
+#
+#   python -m eigengrok.train --config configs/smoke.yaml
+task: MODULAR
+modulus: 23
+train_frac: 0.5
+output_dim: 23
+depth: 1
+width: 32
+num_heads: 4
+activation: GELU
+
+optimizer: AdamW
+lr: 1.0e-3
+weight_decay: 1.0
+loss_function: CrossEntropy
+batch_size: 512
+optimization_steps: 300
+
+log_every: 50
+eval_every: 50
+checkpoint_every: 100
+
+run_spectral: true
+spectral_m: 20
+spectral_k: 5
+spectral_every: 100
+
+output_dir: runs/smoke
+seed: 0

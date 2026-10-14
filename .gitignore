@@ -5,9 +5,14 @@
 # Old stuff
 old_everything/
 
-# Data
-data/FashionMNIST/
-data/MNIST/
+# Python environments (never commit one; see README for setup)
+grok-env/
+.venv/
+venv/
+*.egg-info/
+
+# Downloaded datasets (EIGENGROK_DATA_DIR defaults to ./data)
+/data/
 
 # Logs
 logs/
@@ -16,10 +21,7 @@ logs/
 runs/
 runs_arch_sweep/
 
-# Interactive plotly duplicates of the PNG figures
-*_PLOTLY.html
-
-# Checkpoints (figures/results under runs/ are tracked)
+# Checkpoints
 *.pt
 *.pth
 *.ckpt
@@ -40,3 +42,7 @@ results/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# Local mirror backup of the GitHub repo
+eg-mirror.git/
+

@@ -4,14 +4,14 @@
 """
 Post-hoc Hessian spectral analysis from saved checkpoints.
 
-Loads a run's checkpoints (see project_io/dir_making.py for the directory
-layout) at a chosen set of steps and computes the same spectral observables
-training/loop.py computes live -- analysis.eigenthings.estimate_density +
-analysis.spectral_observables.compute_spectral_observables_with_stderr --
-writing one row per step to a parquet file.
+Loads a run's checkpoints (see eigengrok/outputs.py for the directory
+layout) at a chosen set of steps and computes the same spectral statistics
+eigengrok/train/loop.py computes live (eigengrok.hessian.snapshot.hessian_snapshot,
+on the same fixed evaluation batch), writing one row per step to a parquet file:
+each statistic plus its `<name>_stderr` over probes.
 
 Exists for runs trained with run_spectral=False (e.g. the modulus=91
-weight-decay sweep driven by scripts/run_grok_mod91.py), where the Hessian
+weight-decay sweep, configs/mod91_wd_sweep.yaml), where the Hessian
 spectrum was never logged during training: this recovers it after the fact
 from checkpoints alone, with no retraining.
 
@@ -25,20 +25,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
-from dataclasses import fields
 from pathlib import Path
 from typing import Any, Dict, List
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 import torch
 
-from analysis.eigenthings import estimate_density  # noqa: E402
-from analysis.spectral_observables import compute_spectral_observables_with_stderr  # noqa: E402
-from configs.base import ExperimentConfig  # noqa: E402
-from tasks.registry import TASKS  # noqa: E402
+from eigengrok.hessian.snapshot import fixed_eval_batch, hessian_snapshot
+from eigengrok.config import ExperimentConfig
+from eigengrok.tasks.registry import TASKS
 
 
 def _checkpoint_steps(ckpt_dir: Path) -> List[int]:
@@ -76,25 +71,22 @@ def _load_run_config(run_dir: Path, **overrides: Any) -> ExperimentConfig:
     """
     Rebuilds an ExperimentConfig good enough to reconstruct the model and
     data a run's checkpoints came from. Reads config_full.json (written by
-    project_io/dir_making.make_dirs at training time) rather than trusting a
-    checkpoint's embedded config -- dropping unknown keys so a field that's
-    since been renamed or removed (e.g. the old `spectral_sigma` ->
-    `spectral_sigma_frac`) doesn't crash construction of the *current*
-    dataclass.
+    eigengrok/outputs.py's make_dirs at training time) rather than trusting a
+    checkpoint's embedded config -- dropping unknown keys (strict=False) so
+    a field that's since been renamed or removed (e.g. the old
+    `spectral_sigma` -> `spectral_sigma_frac`) doesn't crash construction of
+    the *current* dataclass.
     """
     saved = json.loads((run_dir / "config_full.json").read_text())
-
-    current_fields = {f.name for f in fields(ExperimentConfig)}
-    filtered = {k: v for k, v in saved.items() if k in current_fields}
-    filtered.update(overrides)
+    saved.update(overrides)
 
     # This script recomputes the spectrum itself, from checkpoints -- it is
     # never the training loop's live SpectralSchedule-driven logging, so the
     # reconstructed config should never claim run_spectral=True regardless
     # of what the original training run used.
-    filtered["run_spectral"] = False
+    saved["run_spectral"] = False
 
-    return ExperimentConfig(**filtered)
+    return ExperimentConfig.from_dict(saved, strict=False)
 
 
 def main() -> None:
@@ -102,10 +94,10 @@ def main() -> None:
     parser.add_argument("run_dir", type=Path, help="Run base dir (contains checkpoints/, config_full.json)")
     parser.add_argument("--steps", required=True, help="'start:stop:stride' or comma-separated step list")
     parser.add_argument("--out", type=Path, required=True, help="Output parquet path")
-    parser.add_argument("--spectral_m", type=int, default=None, help="Override spectral_m (default: configs/base.py)")
-    parser.add_argument("--spectral_k", type=int, default=None, help="Override spectral_k (default: configs/base.py)")
+    parser.add_argument("--spectral_m", type=int, default=None, help="Override spectral_m (default: eigengrok/config.py)")
+    parser.add_argument("--spectral_k", type=int, default=None, help="Override spectral_k (default: eigengrok/config.py)")
     parser.add_argument("--spectral_sigma_frac", type=float, default=None)
-    parser.add_argument("--spectral_batch_size", type=int, default=None)
+    parser.add_argument("--spectral_max_points", type=int, default=None)
     parser.add_argument("--probe_seed", type=int, default=None, help="Default: the run's own seed")
     parser.add_argument("--device", default=None, help="Default: cuda if available, else cpu")
     args = parser.parse_args()
@@ -139,8 +131,8 @@ def main() -> None:
         overrides["spectral_k"] = args.spectral_k
     if args.spectral_sigma_frac is not None:
         overrides["spectral_sigma_frac"] = args.spectral_sigma_frac
-    if args.spectral_batch_size is not None:
-        overrides["spectral_batch_size"] = args.spectral_batch_size
+    if args.spectral_max_points is not None:
+        overrides["spectral_max_points"] = args.spectral_max_points
 
     cfg = _load_run_config(run_dir, **overrides)
     probe_seed = args.probe_seed if args.probe_seed is not None else cfg.seed
@@ -159,7 +151,7 @@ def main() -> None:
     )
     print(
         f"Spectral params: m={cfg.spectral_m} k={cfg.spectral_k} sigma_frac={cfg.spectral_sigma_frac} "
-        f"batch_size={cfg.spectral_batch_size} probe_seed={probe_seed}"
+        f"max_points={cfg.spectral_max_points} probe_seed={probe_seed}"
     )
     print(f"Steps ({len(steps)}): {steps[0]}..{steps[-1]}")
     print(f"Device: {device}")
@@ -168,15 +160,8 @@ def main() -> None:
     model = task.build_model(device)
 
     data = task.build_data()
-    train_ds = data["train_ds"]
-    spectral_loader = torch.utils.data.DataLoader(
-        train_ds,
-        batch_size=min(cfg.spectral_batch_size, len(train_ds)),
-        shuffle=False,
-    )
-    x_spectral, y_spectral = next(iter(spectral_loader))
-    x_spectral = x_spectral.to(device).float()
-    y_spectral = y_spectral.to(device)
+    x_hessian, y_hessian = fixed_eval_batch(data["train_ds"], cfg.spectral_max_points, seed=cfg.seed, device=device)
+    hessian_loss = lambda logits, labels: task.compute_training_loss(logits, labels, device)  # noqa: E731
 
     rows: List[Dict[str, Any]] = []
 
@@ -185,35 +170,22 @@ def main() -> None:
         model.load_state_dict(ckpt["model_state_dict"])
         model.eval()
 
-        logits_spec = model(x_spectral)
-        loss_spec = task.compute_training_loss(logits_spec, y_spectral, device)
-
-        spec = estimate_density(
-            model=model,
-            m=cfg.spectral_m,
-            k=cfg.spectral_k,
-            sigma_frac=cfg.spectral_sigma_frac,
-            loss=loss_spec,
-            probe_seed=probe_seed,
-        )
-
-        obs, obs_stderr = compute_spectral_observables_with_stderr(
-            probe_nodes=spec.probe_nodes,
-            probe_weights=spec.probe_weights,
-            n_params=spec.n_params,
+        snap = hessian_snapshot(
+            model, x_hessian, y_hessian, hessian_loss,
+            m=cfg.spectral_m, k=cfg.spectral_k, probe_seed=probe_seed, sigma_frac=cfg.spectral_sigma_frac,
         )
 
         row: Dict[str, Any] = {"step": step}
-        for f in fields(obs):
-            row[f.name] = getattr(obs, f.name)
-            row[f"{f.name}_stderr"] = getattr(obs_stderr, f.name)
+        for name, value in snap.stats.items():
+            row[name] = value
+            row[f"{name}_stderr"] = snap.stderr[name]
         rows.append(row)
 
+        st = snap.stats
         print(
-            f"step {step:7d}: top_eig={obs.top_eig:.3e}±{obs_stderr.top_eig:.1e}, "
-            f"bulk_edge={obs.bulk_edge:.3e}, trace={obs.trace:.3e}, "
-            f"eff_rank={obs.effective_rank:.2f}, neg_mass={obs.negative_mass:.3e}, "
-            f"cond={obs.conditioning:.3e}"
+            f"step {step:7d}: top_eig={st['top_eig']:.3e}, trace={st['trace']:.3e}"
+            f"±{snap.stderr['trace']:.1e}, eff_rank={st['effective_rank']:.2f}, "
+            f"neg_mass={st['negative_mass']:.3e}, n_outliers={st['n_outliers']:.1f}"
         )
 
     df = pd.DataFrame(rows).sort_values("step").reset_index(drop=True)

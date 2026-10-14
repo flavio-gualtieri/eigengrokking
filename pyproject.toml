@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eigengrok"
+version = "0.1.0"
+description = "Do early-warning signals of grokking forecast grokking? Hessian spectra and other indicators across many training runs."
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["eigengrok*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: long-running checks, excluded from the default run (pytest -m slow to run them)",
+]
+addopts = "-m 'not slow'"

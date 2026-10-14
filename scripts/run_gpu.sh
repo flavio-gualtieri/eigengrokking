@@ -1,6 +1,13 @@
 #!/bin/bash
+# Trains one run on a GPU node.
+#
+# Usage:
+#   sbatch --export="ALL,CONFIG=configs/<name>.yaml,OVERRIDES=seed=1 weight_decay=0.6" \
+#       scripts/run_gpu.sh
+#
+# OVERRIDES is optional (space-separated key=value pairs, passed to --set).
 
-#SBATCH -J eigengrokking_gpu_test
+#SBATCH -J eigengrokking_gpu
 #SBATCH -p sae
 #SBATCH -A pilot_sae_gpu
 #SBATCH -n 8
@@ -15,11 +22,13 @@ set -euo pipefail
 
 cd "$SLURM_SUBMIT_DIR"
 
-module load miniforge
-mamba activate /gpfs/scratch/qp252676/globus/grokking/grok-env
+source scripts/slurm_env.sh
 
 echo "Host: $(hostname)"
 echo "Assigned GPU: ${SLURM_JOB_GPUS}"
 echo "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}"
 
-python main.py
+: "${CONFIG:?CONFIG must be set (exported via sbatch --export)}"
+# OVERRIDES is deliberately word-split into separate key=value arguments.
+# shellcheck disable=SC2086
+python -m eigengrok.train --config "${CONFIG}" --set ${OVERRIDES:-}

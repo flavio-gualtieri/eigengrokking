@@ -2,7 +2,7 @@
 # Fills the alpha=8 gap in the wd sweep: alpha=1 was run at wd in
 # {0.45..1.00 step 0.05} (see submit_wd_sweep.sh), but alpha=8 was only run
 # at wd>=0.70 (see reports/wd_sweep_accuracy_curves.csv and the
-# fig:onset-wd caption in writeup.py). This submits just the missing
+# figure from eigengrok/analysis/onset_vs_wd.py). This submits just the missing
 # low-wd end for alpha=8 so it matches alpha=1's range, without
 # resubmitting (and burning GPU time re-running) the wd=0.70..1.00 points
 # alpha=8 already has.

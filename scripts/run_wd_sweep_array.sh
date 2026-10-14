@@ -17,10 +17,7 @@ set -eo pipefail
 cd "$SLURM_SUBMIT_DIR"
 mkdir -p logs
 
-module load miniforge
-set +u
-mamba activate /gpfs/scratch/qp252676/globus/envs/grok-env
-set -u
+source scripts/slurm_env.sh
 
 : "${WEIGHT_DECAY:?WEIGHT_DECAY must be set (exported via sbatch --export)}"
 INIT_SCALE="${INIT_SCALE:-1.0}"
@@ -28,8 +25,7 @@ INIT_SCALE="${INIT_SCALE:-1.0}"
 echo "Host: $(hostname)"
 echo "weight_decay=${WEIGHT_DECAY} init_scale=${INIT_SCALE} seed=${SLURM_ARRAY_TASK_ID}"
 
-python scripts/run_grok_mod91.py \
-    --weight_decay "${WEIGHT_DECAY}" \
-    --seed "${SLURM_ARRAY_TASK_ID}" \
-    --optimization_steps 150000 \
-    --initialization_scale "${INIT_SCALE}"
+python -m eigengrok.train --config configs/mod91_wd_sweep.yaml --set \
+    weight_decay="${WEIGHT_DECAY}" \
+    initialization_scale="${INIT_SCALE}" \
+    seed="${SLURM_ARRAY_TASK_ID}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Submits one separate SLURM array job per weight_decay value in the sweep.
-# Each array job runs scripts/run_grok_mod91.py across seeds 0-9 (see
+# Each array job trains configs/mod91_wd_sweep.yaml across seeds 0-9 (see
 # run_wd_sweep_array.sh's --array range) at that fixed weight_decay.
 #
 # Usage: ./submit_wd_sweep.sh [initialization_scale]

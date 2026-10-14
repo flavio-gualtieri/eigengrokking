@@ -2,7 +2,7 @@
 # scripts/aggregate_seeds.py
 
 """
-Aggregates a seed sweep (see configs/sweeps.py) into mean +/- std curves.
+Aggregates a seed sweep (see scripts/submit_wd_sweep.sh) into mean +/- std curves.
 
 Usage:
     python scripts/aggregate_seeds.py <family_dir>
@@ -14,30 +14,27 @@ directories, e.g.:
 Single-seed grokking curves (and single-seed spectral statistics) are
 notoriously variable; this pools >=5 seeds of the same architecture/
 hyperparameters into a mean +/- std band, complementing the per-run,
-per-checkpoint +/-stderr-over-probes that training/loop.py already saves.
+per-checkpoint +/-stderr-over-probes that eigengrok/train/loop.py already saves.
 """
 
 from __future__ import annotations
 
 import argparse
-import sys
-from dataclasses import fields
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from analysis.spectral_observables import SpectralObservables  # noqa: E402
+from eigengrok.hessian.spectrum import STAT_NAMES
 
 ACCURACY_KEYS = [
     ("train_steps", "train_accuracies", "Train"),
     ("test_steps", "test_accuracies", "Test"),
 ]
 
-# Every observable training/loop.py logs per checkpoint (see SpectralObservables).
-SPECTRAL_KEYS = [f.name for f in fields(SpectralObservables)]
+# Every spectral statistic eigengrok/train/loop.py logs per snapshot.
+SPECTRAL_KEYS = list(STAT_NAMES)
 
 
 def _load_runs(family_dir: Path) -> List[Dict[str, np.ndarray]]:
@@ -67,11 +64,8 @@ def _aggregate_on_common_grid(
     spanning the intersection of all runs' step ranges, then returns
     (grid, mean, std) across runs.
 
-    Interpolation (rather than a step-exact join) matters for the spectral
-    observables specifically: the adaptive logging schedule
-    (training/spectral_schedule.py) reacts to each run's own accuracy
-    trajectory, so different seeds generally snapshot the spectrum at
-    different steps.
+    Interpolation (rather than a step-exact join) lets runs with different
+    logging or snapshot schedules be pooled.
     """
     per_run = [
         (r[step_key].astype(float), r[value_key].astype(float))
