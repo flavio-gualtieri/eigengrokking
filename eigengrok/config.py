@@ -68,6 +68,7 @@ class ExperimentConfig:
     log_every: int = 150
     eval_every: int = 1000
     checkpoint_every: int = 1000  # independent of eval_every -- see eigengrok/train/loop.py; 0 = no checkpoints
+    checkpoint_model_only: bool = False  # weights only, no optimizer state or history (eigengrok/outputs.py)
     output_dir: str = field(default_factory=lambda: os.environ.get("EIGENGROK_OUTPUT_DIR", "./results"))
     seed: int = 0
     dtype: str = "float32"

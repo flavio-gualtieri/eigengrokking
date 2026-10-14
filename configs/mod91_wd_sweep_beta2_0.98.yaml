@@ -1,0 +1,40 @@
+# The p=91 weight-decay x init-scale sweep, rerun with AdamW betas (0.9, 0.98).
+# Same model, data and schedule as configs/mod91_wd_sweep.yaml. The Phase 1
+# pilot (reports/collapse_pilot_summary.md) found beta2=0.98 removes most
+# post-grokking collapses without moving onset.
+#
+# Checkpoints: weights only, every 100 steps; after each run
+# scripts/prune_checkpoints.py keeps the Phase 2 grid around that run's onset.
+# scripts/run_wd_sweep_rerun_array.sh runs all 240 runs:
+#
+#   python -m eigengrok.train --config configs/mod91_wd_sweep_beta2_0.98.yaml \
+#       --set weight_decay=0.6 initialization_scale=1 seed=0
+task: MODULAR
+modulus: 91
+train_frac: 0.3
+output_dim: 91
+depth: 1
+width: 128
+num_heads: 4
+activation: GELU
+initialization_scale: 1.0
+
+optimizer: AdamW
+lr: 1.0e-3
+weight_decay: 1.0
+adam_beta1: 0.9
+adam_beta2: 0.98
+grad_clip: null
+loss_function: CrossEntropy
+batch_size: 8192          # > 91**2 * 0.3 (~2484): full-batch
+optimization_steps: 150000
+
+log_every: 100
+eval_every: 100
+checkpoint_every: 100
+checkpoint_model_only: true
+
+run_spectral: false       # spectra are computed afterwards from the kept checkpoints (scripts/spectral_from_checkpoints.py)
+output_dir: results/sweep_beta2_0.98   # not results/: the original sweep's runs have the same init/wd/seed paths
+seed: 0
+dtype: float32

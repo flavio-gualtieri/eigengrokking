@@ -206,6 +206,7 @@ def run_experiment(task) -> Dict[str, Any]:
                         optimizer=opt,
                         history=history,
                         config=cfg,
+                        model_only=cfg.checkpoint_model_only,
                     )
                 except Exception as e:
                     print(f"Warning: checkpoint save failed at step {steps}: {e}")

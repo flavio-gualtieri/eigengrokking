@@ -41,10 +41,9 @@ def _identity_dict(cfg) -> Dict[str, Any]:
     return d
 
 
-def make_dirs(cfg) -> dict[str, Path]:
+def run_dir(cfg) -> Path:
+    """A run's base directory under cfg.output_dir (make_dirs creates it)."""
     out_root = Path(cfg.output_dir)
-
-    id_dict = _identity_dict(cfg)
 
     # ----- PATH STRUCTURE -----
     group_parts = [str(cfg.task)]
@@ -66,7 +65,12 @@ def make_dirs(cfg) -> dict[str, Path]:
     # hash removed → same config overwrites
     leaf = f"seed={cfg.seed}"
 
-    base = out_root.joinpath(*map(_slugify, group_parts), _slugify(leaf))
+    return out_root.joinpath(*map(_slugify, group_parts), _slugify(leaf))
+
+
+def make_dirs(cfg) -> dict[str, Path]:
+    id_dict = _identity_dict(cfg)
+    base = run_dir(cfg)
 
     ckpt_dir = base / "checkpoints"
     fig_dir = base / "figures"
@@ -117,9 +121,12 @@ def save_checkpoint(
         optimizer: torch.optim.Optimizer,
         history: Dict[str, Any],
         config: Optional[Any] = None,
+        model_only: bool = False,
     ) -> None:
     """
-    Save model + optimizer + training history checkpoint.
+    Save model + optimizer + training history checkpoint. With `model_only`,
+    just the step, the model weights and the config: enough to recompute the
+    Hessian (scripts/spectral_from_checkpoints.py), not to resume training.
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -132,16 +139,11 @@ def save_checkpoint(
     else:
         config_obj = None
 
-    torch.save(
-        {
-            "step": step,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "history": history,
-            "config": config_obj,
-        },
-        path,
-    )
+    state = {"step": step, "model_state_dict": model.state_dict(), "config": config_obj}
+    if not model_only:
+        state["optimizer_state_dict"] = optimizer.state_dict()
+        state["history"] = history
+    torch.save(state, path)
 
 
 def save_training_data_npz(
