@@ -21,6 +21,9 @@ an output that already exists is never overwritten with fewer runs than it
 holds: the script reports the runs it would lose and leaves that file
 untouched, unless --allow-fewer-runs is given.
 
+An output path ending in .gz is written gzip-compressed (with a fixed
+timestamp, so identical data gives an identical file); pandas reads it as is.
+
 Usage:
     python scripts/build_wd_sweep_accuracy_csv.py [results_dir] [--out CSV] [--norms-out CSV]
 """
@@ -29,6 +32,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
+import io
 import re
 from pathlib import Path
 
@@ -53,6 +58,13 @@ def _iter_runs(results_dir: Path):
             print(f"Skipping (unrecognized path shape): {run_dir}")
             continue
         yield m.groupdict(), npz_path
+
+
+def _open(path: Path, mode: str):
+    """Text-mode CSV handle; gzip for *.gz, with mtime 0 when writing so the bytes depend only on the data."""
+    if path.suffix == ".gz":
+        return io.TextIOWrapper(gzip.GzipFile(path, mode + "b", mtime=0), newline="")
+    return open(path, mode, newline="")
 
 
 def _run_key(row) -> tuple:
@@ -103,7 +115,7 @@ def write_guarded(out_path: Path, header: list[str], rows: list[list], *, allow_
     """Writes `rows` to `out_path` unless that would drop runs the existing file holds. True if written."""
     new_runs = {_run_key(dict(zip(header, r))) for r in rows}
     if out_path.exists() and not allow_fewer_runs:
-        with open(out_path, newline="") as f:
+        with _open(out_path, "r") as f:
             old_runs = {_run_key(r) for r in csv.DictReader(f)}
         lost = old_runs - new_runs
         if lost:
@@ -112,7 +124,7 @@ def write_guarded(out_path: Path, header: list[str], rows: list[list], *, allow_
             return False
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w", newline="") as f:
+    with _open(out_path, "w") as f:
         writer = csv.writer(f)
         writer.writerow(header)
         writer.writerows(rows)

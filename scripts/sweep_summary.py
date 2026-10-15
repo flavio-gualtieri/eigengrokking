@@ -92,6 +92,9 @@ def init_effect(runs: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     if len(other) != 1:
         raise ValueError(f"Expected exactly one init besides {INIT_BASELINE}, got {other}")
     alt = other[0]
+    # Only weight decays present at both init scales, so a partial sweep can't bias the pooled comparison.
+    common = sorted(set(runs.loc[runs["init"] == INIT_BASELINE, "wd"]) & set(runs.loc[runs["init"] == alt, "wd"]))
+    runs = runs[runs["wd"].isin(common)]
     base, test = runs[runs["init"] == INIT_BASELINE], runs[runs["init"] == alt]
 
     rows = []
@@ -105,7 +108,7 @@ def init_effect(runs: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         rows.append(row)
     per_wd = pd.DataFrame(rows)
 
-    pooled = {"alt": alt}
+    pooled = {"alt": alt, "n_wd_common": len(common)}
     for metric in ("t_onset", "t_mem", "gap"):
         for init, sub in ((INIT_BASELINE, base), (alt, test)):
             x = sub[metric].to_numpy(dtype=float)
@@ -132,6 +135,8 @@ def wd_effect(runs: pd.DataFrame) -> pd.DataFrame:
     for init, g in runs.groupby("init", sort=True):
         lo = g.loc[np.isclose(g["wd"], WD_LOW), "t_onset"].to_numpy(dtype=float)
         hi = g.loc[np.isclose(g["wd"], WD_BASELINE), "t_onset"].to_numpy(dtype=float)
+        if len(lo) == 0 or len(hi) == 0:  # partial sweep: this init doesn't have both ends yet
+            continue
         row = {"init": init, "n_low": len(lo), "n_base": len(hi)}
         for name, stat in (("mean", np.mean), ("median", np.median)):
             row[f"ratio_{name}"] = float(stat(lo) / stat(hi))
@@ -256,7 +261,8 @@ def write_markdown(path: Path, *, csv_path: Path, runs: pd.DataFrame, cells: pd.
         "",
         f"## Init scale: init {alt} against init {INIT_BASELINE} (baseline) at the same weight decay",
         "",
-        f"Ratio of init-{alt} to init-{INIT_BASELINE} `t_onset`, 10 seeds each side, [95% CI] from resampling both sides independently:",
+        f"Ratio of init-{alt} to init-{INIT_BASELINE} `t_onset` [95% CI, resampling both sides independently]. "
+        f"Only the {ip['n_wd_common']} weight decays present at both init scales are compared or pooled.",
         "",
         "| wd | ratio of means | ratio of medians |",
         "|---|---|---|",

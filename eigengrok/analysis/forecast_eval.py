@@ -14,6 +14,9 @@ Splits (each run is predicted by a model that never saw its setting):
     init       train on one init scale, test on the other, both directions
     wd_range   train on wd <= 0.7, test on wd > 0.7
 
+No model extrapolates: each test fold's features are clipped to the range
+they span in its training fold (`clip_to_training_range`).
+
 Metrics on the predicted runs:
     r2          1 - SSE / total variance of y
     spearman    rank correlation of prediction and y
@@ -26,6 +29,7 @@ Differences between feature sets are bootstrapped paired (same resample for both
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable
 
 import numpy as np
@@ -71,14 +75,30 @@ def split_folds(table: pd.DataFrame, split: str) -> list[tuple[np.ndarray, np.nd
     raise ValueError(f"Unknown split {split!r}")
 
 
-def oof_predictions(table: pd.DataFrame, columns: list[str], model: str, split: str) -> np.ndarray:
-    """Out-of-fold predictions; NaN for runs no fold tests (the training side of wd_range)."""
+def clip_to_training_range(X_train: np.ndarray, X_test: np.ndarray) -> np.ndarray:
+    """
+    Each test feature clipped to the range it spans in the training fold. A
+    held-out setting can lie outside the training range (every init-1 run
+    memorizes at step 100-300, init-8 runs near step 2000), and a linear model
+    extrapolates such a value without bound; clipped, it is treated as the
+    nearest value the model has seen.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN columns: no bound
+        lo, hi = np.nanmin(X_train, axis=0), np.nanmax(X_train, axis=0)
+    return np.clip(X_test, np.nan_to_num(lo, nan=-np.inf), np.nan_to_num(hi, nan=np.inf))
+
+
+def oof_predictions(table: pd.DataFrame, columns: list[str], model: str, split: str, *, clip: bool = True) -> np.ndarray:
+    """Out-of-fold predictions (test features clipped to the training range unless `clip` is False); NaN for runs no fold tests."""
     X, y = table[columns].to_numpy(dtype=float), table["y"].to_numpy(dtype=float)
     pred = np.full(len(table), np.nan)
     for train, test in split_folds(table, split):
         if len(train) < 5 or len(test) == 0:
             continue
-        pred[test] = make_model(model).fit(X[train], y[train]).predict(X[test])
+        fitted = make_model(model).fit(X[train], y[train])
+        X_test = clip_to_training_range(X[train], X[test]) if clip else X[test]
+        pred[test] = fitted.predict(X_test)
     return pred
 
 

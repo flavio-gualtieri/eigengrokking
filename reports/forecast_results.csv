@@ -1,0 +1,577 @@
+features,metric,value,n_runs,ci_lo,ci_hi,delta_vs,delta,delta_ci_lo,delta_ci_hi,cutoff,model,split,target,clipping
+B0,r2,0.677279,240,0.622336,0.723539,B0+B1,-0.0497112,-0.0843875,-0.0189906,t_mem+500,ridge,settings,t_onset,on
+B0,spearman,0.82406,240,0.788849,0.856608,B0+B1,-0.0337182,-0.0521338,-0.0116287,t_mem+500,ridge,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.173133,-0.267328,-0.0778034,t_mem+500,ridge,settings,t_onset,on
+B0+B1,r2,0.726991,240,0.671187,0.774984,,,,,t_mem+500,ridge,settings,t_onset,on
+B0+B1,spearman,0.857778,240,0.820134,0.888847,,,,,t_mem+500,ridge,settings,t_onset,on
+B0+B1,r2_within,0.173133,240,0.0778034,0.267328,,,,,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C,r2,0.741908,240,0.695669,0.782032,B0+B1,0.0149173,-0.0157162,0.04681,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C,spearman,0.877545,240,0.847317,0.901812,B0+B1,0.0197666,-0.000436689,0.0392231,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C,r2_within,0.278648,240,0.182223,0.368618,B0+B1,0.105514,0.022447,0.179846,t_mem+500,ridge,settings,t_onset,on
+C,r2,0.280551,240,0.182614,0.360108,B0+B1,-0.44644,-0.541271,-0.360757,t_mem+500,ridge,settings,t_onset,on
+C,spearman,0.602845,240,0.527581,0.670969,B0+B1,-0.254934,-0.324963,-0.1872,t_mem+500,ridge,settings,t_onset,on
+C,r2_within,-0.321412,240,-0.59383,-0.103366,B0+B1,-0.494545,-0.776456,-0.284596,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C(H only),r2,0.733326,240,0.684471,0.7748,B0+B1,0.0063351,-0.0202642,0.0356182,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C(H only),spearman,0.87467,240,0.845479,0.898809,B0+B1,0.0168919,0.00061904,0.034063,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.249487,240,0.156994,0.335957,B0+B1,0.0763538,0.00673737,0.142441,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C(G only),r2,0.760167,240,0.699921,0.807901,B0+B1,0.0331766,-0.016835,0.0745853,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C(G only),spearman,0.882826,240,0.845816,0.911106,B0+B1,0.0250472,-0.00560757,0.0495327,t_mem+500,ridge,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.30743,240,0.180876,0.422378,B0+B1,0.134297,0.0155473,0.241008,t_mem+500,ridge,settings,t_onset,on
+B0,r2,-0.879451,240,-1.15226,-0.673048,B0+B1,19.8132,15.8028,24.7448,t_mem+500,ridge,init,t_onset,on
+B0,spearman,0.125354,240,0.0699141,0.180846,B0+B1,-0.0017676,-0.0795999,0.0833958,t_mem+500,ridge,init,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,18.5703,12.051,26.4191,t_mem+500,ridge,init,t_onset,on
+B0+B1,r2,-20.6927,240,-25.7113,-16.6374,,,,,t_mem+500,ridge,init,t_onset,on
+B0+B1,spearman,0.127122,240,0.0320237,0.215958,,,,,t_mem+500,ridge,init,t_onset,on
+B0+B1,r2_within,-18.5703,240,-26.4191,-12.051,,,,,t_mem+500,ridge,init,t_onset,on
+B0+B1+C,r2,-4.12953,240,-5.07693,-3.36205,B0+B1,16.5632,12.8304,21.1116,t_mem+500,ridge,init,t_onset,on
+B0+B1+C,spearman,0.165855,240,0.0869927,0.240665,B0+B1,0.0387335,-0.0342582,0.118327,t_mem+500,ridge,init,t_onset,on
+B0+B1+C,r2_within,-1.89766,240,-2.62147,-1.31509,B0+B1,16.6727,10.1387,24.3985,t_mem+500,ridge,init,t_onset,on
+C,r2,-2.29892,240,-3.05128,-1.70084,B0+B1,18.3938,14.5392,23.1916,t_mem+500,ridge,init,t_onset,on
+C,spearman,0.215913,240,0.113599,0.31918,B0+B1,0.0887913,-0.0213326,0.207445,t_mem+500,ridge,init,t_onset,on
+C,r2_within,-6.05375,240,-7.93156,-4.52158,B0+B1,12.5166,5.8942,19.899,t_mem+500,ridge,init,t_onset,on
+B0+B1+C(H only),r2,-18.9342,240,-22.8743,-15.8399,B0+B1,1.75851,-2.36008,5.81464,t_mem+500,ridge,init,t_onset,on
+B0+B1+C(H only),spearman,0.120259,240,0.0390307,0.197117,B0+B1,-0.00686293,-0.0813721,0.0704861,t_mem+500,ridge,init,t_onset,on
+B0+B1+C(H only),r2_within,-7.25179,240,-9.81924,-5.19698,B0+B1,11.3185,4.63478,18.8572,t_mem+500,ridge,init,t_onset,on
+B0+B1+C(G only),r2,-58.2373,240,-73.9548,-45.3453,B0+B1,-37.5446,-52.827,-24.9569,t_mem+500,ridge,init,t_onset,on
+B0+B1+C(G only),spearman,0.456559,240,0.362917,0.539644,B0+B1,0.329437,0.222298,0.435545,t_mem+500,ridge,init,t_onset,on
+B0+B1+C(G only),r2_within,-119.216,240,-155.205,-88.8566,B0+B1,-100.645,-135.148,-70.1522,t_mem+500,ridge,init,t_onset,on
+B0,r2,-0.711975,120,-1.03699,-0.476139,B0+B1,-0.654526,-0.893496,-0.429735,t_mem+500,ridge,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.159232,-0.259812,-0.051004,t_mem+500,ridge,wd_range,t_onset,on
+B0,r2_within,0,120,0,0,B0+B1,-0.0573234,-0.224038,0.131873,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1,r2,-0.0574491,120,-0.26185,0.112981,,,,,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1,spearman,0.563859,120,0.428316,0.688922,,,,,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1,r2_within,0.0573234,120,-0.131873,0.224038,,,,,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C,r2,-0.246285,120,-0.447655,-0.0913403,B0+B1,-0.188836,-0.348369,-0.028855,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C,spearman,0.596299,120,0.463405,0.706824,B0+B1,0.0324406,-0.0690923,0.131572,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C,r2_within,0.251187,120,0.0817815,0.413232,B0+B1,0.193864,0.0772928,0.311258,t_mem+500,ridge,wd_range,t_onset,on
+C,r2,-2.48845,120,-3.15723,-1.99371,B0+B1,-2.431,-3.02816,-1.95408,t_mem+500,ridge,wd_range,t_onset,on
+C,spearman,0.493422,120,0.347482,0.618323,B0+B1,-0.0704368,-0.238885,0.0916716,t_mem+500,ridge,wd_range,t_onset,on
+C,r2_within,0.137067,120,-0.0420592,0.288737,B0+B1,0.0797432,-0.0883971,0.247122,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.142232,120,-0.325596,-0.00807228,B0+B1,-0.084783,-0.209692,0.0482112,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.621281,120,0.494175,0.729385,B0+B1,0.0574216,-0.00511215,0.122407,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.222379,120,0.0710296,0.367943,B0+B1,0.165056,0.074055,0.258249,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2,-0.535692,120,-0.854745,-0.282851,B0+B1,-0.478243,-0.690538,-0.29955,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.564821,120,0.425478,0.686771,B0+B1,0.000962412,-0.0691623,0.0735698,t_mem+500,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.0176836,120,-0.287531,0.276979,B0+B1,-0.0396398,-0.230914,0.139051,t_mem+500,ridge,wd_range,t_onset,on
+B0,r2,0.632161,240,0.574272,0.682137,B0+B1,-0.167735,-0.215856,-0.124689,t_mem+500,gbt,settings,t_onset,on
+B0,spearman,0.790114,240,0.753983,0.824419,B0+B1,-0.107642,-0.133365,-0.0795264,t_mem+500,gbt,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.477019,-0.579752,-0.376325,t_mem+500,gbt,settings,t_onset,on
+B0+B1,r2,0.799896,240,0.752799,0.840091,,,,,t_mem+500,gbt,settings,t_onset,on
+B0+B1,spearman,0.897755,240,0.868263,0.921072,,,,,t_mem+500,gbt,settings,t_onset,on
+B0+B1,r2_within,0.477019,240,0.376325,0.579752,,,,,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C,r2,0.835402,240,0.798844,0.865706,B0+B1,0.0355051,0.00102848,0.072056,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C,spearman,0.916341,240,0.893497,0.93423,B0+B1,0.0185853,-0.000915227,0.0395752,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C,r2_within,0.596945,240,0.522076,0.662429,B0+B1,0.119927,0.0213227,0.215554,t_mem+500,gbt,settings,t_onset,on
+C,r2,0.696553,240,0.639204,0.744602,B0+B1,-0.103344,-0.167914,-0.0428259,t_mem+500,gbt,settings,t_onset,on
+C,spearman,0.847597,240,0.811725,0.876185,B0+B1,-0.0501581,-0.0868018,-0.0155887,t_mem+500,gbt,settings,t_onset,on
+C,r2_within,0.31392,240,0.146079,0.44967,B0+B1,-0.163099,-0.347913,0.00385309,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C(H only),r2,0.840714,240,0.807998,0.868366,B0+B1,0.0408176,0.0083078,0.0748007,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C(H only),spearman,0.918723,240,0.896455,0.935828,B0+B1,0.0209682,0.000809385,0.0412647,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.599432,240,0.525989,0.666416,B0+B1,0.122413,0.0305629,0.210604,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C(G only),r2,0.837794,240,0.802586,0.866309,B0+B1,0.0378976,0.00721738,0.0699078,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C(G only),spearman,0.917222,240,0.893592,0.934689,B0+B1,0.0194666,0.00200956,0.0372154,t_mem+500,gbt,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.610076,240,0.537684,0.67306,B0+B1,0.133058,0.0450027,0.221301,t_mem+500,gbt,settings,t_onset,on
+B0,r2,0.501159,240,0.425382,0.563901,B0+B1,0.204102,0.149321,0.259654,t_mem+500,gbt,init,t_onset,on
+B0,spearman,0.705649,240,0.662604,0.747054,B0+B1,0.196374,0.15386,0.241699,t_mem+500,gbt,init,t_onset,on
+B0,r2_within,-2.22045e-16,240,-2.22045e-16,2.22045e-16,B0+B1,-0.0490102,-0.126694,0.0343173,t_mem+500,gbt,init,t_onset,on
+B0+B1,r2,0.297057,240,0.211766,0.370019,,,,,t_mem+500,gbt,init,t_onset,on
+B0+B1,spearman,0.509275,240,0.439947,0.571527,,,,,t_mem+500,gbt,init,t_onset,on
+B0+B1,r2_within,0.0490102,240,-0.0343173,0.126694,,,,,t_mem+500,gbt,init,t_onset,on
+B0+B1+C,r2,0.173097,240,0.0313571,0.28963,B0+B1,-0.123959,-0.220597,-0.0395856,t_mem+500,gbt,init,t_onset,on
+B0+B1+C,spearman,0.582115,240,0.513048,0.646347,B0+B1,0.0728406,0.00702489,0.135006,t_mem+500,gbt,init,t_onset,on
+B0+B1+C,r2_within,-0.404933,240,-0.681869,-0.188165,B0+B1,-0.453943,-0.690915,-0.257099,t_mem+500,gbt,init,t_onset,on
+C,r2,-0.284821,240,-0.492049,-0.113617,B0+B1,-0.581878,-0.761886,-0.432902,t_mem+500,gbt,init,t_onset,on
+C,spearman,0.393005,240,0.304143,0.475974,B0+B1,-0.11627,-0.213263,-0.0193498,t_mem+500,gbt,init,t_onset,on
+C,r2_within,-0.879397,240,-1.29966,-0.550048,B0+B1,-0.928407,-1.31407,-0.610012,t_mem+500,gbt,init,t_onset,on
+B0+B1+C(H only),r2,0.190451,240,0.047975,0.310814,B0+B1,-0.106605,-0.197605,-0.0263634,t_mem+500,gbt,init,t_onset,on
+B0+B1+C(H only),spearman,0.592217,240,0.524327,0.656177,B0+B1,0.0829429,0.0213879,0.141605,t_mem+500,gbt,init,t_onset,on
+B0+B1+C(H only),r2_within,-0.342652,240,-0.587805,-0.140323,B0+B1,-0.391662,-0.606594,-0.215816,t_mem+500,gbt,init,t_onset,on
+B0+B1+C(G only),r2,0.146598,240,-0.00185722,0.268718,B0+B1,-0.150458,-0.251658,-0.0622749,t_mem+500,gbt,init,t_onset,on
+B0+B1+C(G only),spearman,0.566323,240,0.497107,0.631322,B0+B1,0.0570488,-0.00443363,0.116426,t_mem+500,gbt,init,t_onset,on
+B0+B1+C(G only),r2_within,-0.43026,240,-0.707067,-0.208865,B0+B1,-0.479271,-0.724847,-0.275691,t_mem+500,gbt,init,t_onset,on
+B0,r2,-0.776161,120,-1.11897,-0.525578,B0+B1,-0.404079,-0.615732,-0.205796,t_mem+500,gbt,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.272338,-0.405906,-0.141767,t_mem+500,gbt,wd_range,t_onset,on
+B0,r2_within,0,120,-2.22045e-16,2.22045e-16,B0+B1,-0.392121,-0.505958,-0.25719,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1,r2,-0.372083,120,-0.653508,-0.176344,,,,,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1,spearman,0.676965,120,0.564985,0.759145,,,,,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1,r2_within,0.392121,120,0.25719,0.505958,,,,,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C,r2,-0.443704,120,-0.721719,-0.234091,B0+B1,-0.0716211,-0.22351,0.0769111,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C,spearman,0.672285,120,0.565761,0.755071,B0+B1,-0.00468003,-0.0813783,0.079691,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C,r2_within,0.326056,120,0.139733,0.482902,B0+B1,-0.0660654,-0.191387,0.0494854,t_mem+500,gbt,wd_range,t_onset,on
+C,r2,-1.10515,120,-1.55053,-0.756828,B0+B1,-0.73307,-1.0427,-0.4652,t_mem+500,gbt,wd_range,t_onset,on
+C,spearman,0.641988,120,0.544725,0.722728,B0+B1,-0.0349769,-0.140922,0.0679456,t_mem+500,gbt,wd_range,t_onset,on
+C,r2_within,0.138433,120,-0.121272,0.337376,B0+B1,-0.253688,-0.466288,-0.0795997,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.361951,120,-0.6165,-0.172751,B0+B1,0.0101323,-0.123904,0.143106,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.669825,120,0.55421,0.761075,B0+B1,-0.00713992,-0.0812674,0.0729096,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.352558,120,0.170403,0.513142,B0+B1,-0.0395627,-0.170687,0.0835571,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2,-0.646898,120,-0.960203,-0.417703,B0+B1,-0.274816,-0.419691,-0.145092,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.67849,120,0.57141,0.759582,B0+B1,0.00152527,-0.0785895,0.0752858,t_mem+500,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.398255,120,0.23585,0.534461,B0+B1,0.00613394,-0.0970648,0.110777,t_mem+500,gbt,wd_range,t_onset,on
+B0,r2,0.677279,240,0.622336,0.723539,B0+B1,-0.0437495,-0.0771112,-0.0107186,t_mem+1000,ridge,settings,t_onset,on
+B0,spearman,0.82406,240,0.788849,0.856608,B0+B1,-0.0399768,-0.057918,-0.0185385,t_mem+1000,ridge,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.149438,-0.240978,-0.0501121,t_mem+1000,ridge,settings,t_onset,on
+B0+B1,r2,0.721029,240,0.667277,0.767206,,,,,t_mem+1000,ridge,settings,t_onset,on
+B0+B1,spearman,0.864037,240,0.832544,0.889988,,,,,t_mem+1000,ridge,settings,t_onset,on
+B0+B1,r2_within,0.149438,240,0.0501121,0.240978,,,,,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C,r2,0.770179,240,0.726832,0.807196,B0+B1,0.04915,0.0135908,0.0821383,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C,spearman,0.889511,240,0.862434,0.91114,B0+B1,0.0254739,0.00679231,0.0423396,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C,r2_within,0.291165,240,0.174146,0.387359,B0+B1,0.141728,0.0398888,0.22805,t_mem+1000,ridge,settings,t_onset,on
+C,r2,0.47027,240,0.38752,0.541565,B0+B1,-0.250759,-0.326504,-0.18497,t_mem+1000,ridge,settings,t_onset,on
+C,spearman,0.716159,240,0.658038,0.764484,B0+B1,-0.147878,-0.197568,-0.101049,t_mem+1000,ridge,settings,t_onset,on
+C,r2_within,-0.265936,240,-0.554241,-0.0399905,B0+B1,-0.415374,-0.681813,-0.211305,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C(H only),r2,0.767797,240,0.723008,0.803787,B0+B1,0.046768,0.0109495,0.0804652,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C(H only),spearman,0.88808,240,0.860216,0.909431,B0+B1,0.024043,0.00631825,0.0402662,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.286522,240,0.168511,0.383673,B0+B1,0.137084,0.0321494,0.228036,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C(G only),r2,0.783822,240,0.741393,0.817942,B0+B1,0.0627934,0.0349056,0.0934473,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C(G only),spearman,0.897812,240,0.872653,0.9168,B0+B1,0.033775,0.0171428,0.0502104,t_mem+1000,ridge,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.338604,240,0.233237,0.428845,B0+B1,0.189166,0.101956,0.26865,t_mem+1000,ridge,settings,t_onset,on
+B0,r2,-0.879451,240,-1.15226,-0.673048,B0+B1,11.4102,9.08455,14.3804,t_mem+1000,ridge,init,t_onset,on
+B0,spearman,0.125354,240,0.0699141,0.180846,B0+B1,-0.100181,-0.17366,-0.0258521,t_mem+1000,ridge,init,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,10.0857,6.71211,14.1765,t_mem+1000,ridge,init,t_onset,on
+B0+B1,r2,-12.2897,240,-15.3513,-9.90931,,,,,t_mem+1000,ridge,init,t_onset,on
+B0+B1,spearman,0.225535,240,0.135995,0.317948,,,,,t_mem+1000,ridge,init,t_onset,on
+B0+B1,r2_within,-10.0857,240,-14.1765,-6.71211,,,,,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C,r2,-1.74547,240,-2.25583,-1.32906,B0+B1,10.5442,8.45047,13.2537,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C,spearman,0.246347,240,0.16028,0.329421,B0+B1,0.0208119,-0.0471529,0.091177,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C,r2_within,-1.17317,240,-1.71983,-0.748454,B0+B1,8.91256,5.69291,12.7178,t_mem+1000,ridge,init,t_onset,on
+C,r2,-70.4232,240,-119.376,-34.2687,B0+B1,-58.1335,-107.562,-21.8875,t_mem+1000,ridge,init,t_onset,on
+C,spearman,0.436017,240,0.337907,0.522034,B0+B1,0.210482,0.0810389,0.328508,t_mem+1000,ridge,init,t_onset,on
+C,r2_within,-157.583,240,-272.656,-65.7882,B0+B1,-147.497,-260.841,-56.3744,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C(H only),r2,-48.7553,240,-70.5911,-33.647,B0+B1,-36.4656,-58.0381,-21.7242,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C(H only),spearman,0.168177,240,0.0721724,0.258201,B0+B1,-0.0573584,-0.139866,0.0225406,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C(H only),r2_within,-102.018,240,-184.564,-39.0164,B0+B1,-91.9323,-173.168,-29.3089,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C(G only),r2,-63.3152,240,-78.3924,-51.0848,B0+B1,-51.0255,-65.5641,-39.351,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C(G only),spearman,0.301128,240,0.205995,0.387456,B0+B1,0.0755934,-0.0223287,0.170322,t_mem+1000,ridge,init,t_onset,on
+B0+B1+C(G only),r2_within,-70.9643,240,-94.1534,-51.1741,B0+B1,-60.8786,-83.5084,-41.3679,t_mem+1000,ridge,init,t_onset,on
+B0,r2,-0.711975,120,-1.03699,-0.476139,B0+B1,-0.620688,-0.794173,-0.486682,t_mem+1000,ridge,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.302489,-0.450541,-0.141842,t_mem+1000,ridge,wd_range,t_onset,on
+B0,r2_within,0,120,0,0,B0+B1,-0.210553,-0.293757,-0.124252,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1,r2,-0.091287,120,-0.265664,0.0464621,,,,,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1,spearman,0.707116,120,0.608377,0.787487,,,,,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1,r2_within,0.210553,120,0.124252,0.293757,,,,,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C,r2,-0.215464,120,-0.445407,-0.0444884,B0+B1,-0.124177,-0.281334,0.00559476,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C,spearman,0.706727,120,0.612321,0.778088,B0+B1,-0.000389134,-0.074967,0.0723779,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C,r2_within,0.356243,120,0.184253,0.502663,B0+B1,0.14569,0.0245875,0.247021,t_mem+1000,ridge,wd_range,t_onset,on
+C,r2,-1.69321,120,-2.21798,-1.31481,B0+B1,-1.60193,-2.01653,-1.29808,t_mem+1000,ridge,wd_range,t_onset,on
+C,spearman,0.685568,120,0.605304,0.750579,B0+B1,-0.0215483,-0.11325,0.0662926,t_mem+1000,ridge,wd_range,t_onset,on
+C,r2_within,0.241902,120,0.0570268,0.39038,B0+B1,0.0313488,-0.123778,0.139583,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.154649,120,-0.361505,-0.000490803,B0+B1,-0.0633617,-0.186229,0.0395275,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.677267,120,0.573616,0.75417,B0+B1,-0.0298487,-0.105602,0.0432684,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.324951,120,0.169555,0.463978,B0+B1,0.114398,0.00635243,0.205223,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2,-0.183745,120,-0.405409,-0.0224755,B0+B1,-0.0924578,-0.228726,0.0256114,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.712074,120,0.623889,0.78151,B0+B1,0.00495799,-0.0611253,0.0754934,t_mem+1000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.396205,120,0.250147,0.525365,B0+B1,0.185652,0.0891964,0.268091,t_mem+1000,ridge,wd_range,t_onset,on
+B0,r2,0.632161,240,0.574272,0.682137,B0+B1,-0.192451,-0.240571,-0.14446,t_mem+1000,gbt,settings,t_onset,on
+B0,spearman,0.790114,240,0.753983,0.824419,B0+B1,-0.118451,-0.14464,-0.0903595,t_mem+1000,gbt,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.527943,-0.609314,-0.44259,t_mem+1000,gbt,settings,t_onset,on
+B0+B1,r2,0.824613,240,0.787197,0.853949,,,,,t_mem+1000,gbt,settings,t_onset,on
+B0+B1,spearman,0.908565,240,0.882624,0.928324,,,,,t_mem+1000,gbt,settings,t_onset,on
+B0+B1,r2_within,0.527943,240,0.44259,0.609314,,,,,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C,r2,0.811752,240,0.769564,0.846942,B0+B1,-0.0128609,-0.0394674,0.0127467,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C,spearman,0.900088,240,0.872409,0.921666,B0+B1,-0.00847697,-0.0231759,0.00679912,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C,r2_within,0.505657,240,0.398551,0.599596,B0+B1,-0.0222863,-0.102796,0.0583828,t_mem+1000,gbt,settings,t_onset,on
+C,r2,0.645199,240,0.576088,0.702566,B0+B1,-0.179413,-0.24203,-0.122611,t_mem+1000,gbt,settings,t_onset,on
+C,spearman,0.818623,240,0.774525,0.85439,B0+B1,-0.0899417,-0.126099,-0.0561708,t_mem+1000,gbt,settings,t_onset,on
+C,r2_within,0.174501,240,0.00767501,0.321144,B0+B1,-0.353442,-0.513942,-0.210649,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C(H only),r2,0.811783,240,0.770114,0.845574,B0+B1,-0.0128302,-0.0373037,0.0111542,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C(H only),spearman,0.905168,240,0.879444,0.92448,B0+B1,-0.00339652,-0.01738,0.0117081,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.498241,240,0.405044,0.58674,B0+B1,-0.0297026,-0.095498,0.0351679,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C(G only),r2,0.81381,240,0.772529,0.84823,B0+B1,-0.010803,-0.0327958,0.00969316,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C(G only),spearman,0.904779,240,0.877077,0.926341,B0+B1,-0.00378549,-0.0171696,0.00886577,t_mem+1000,gbt,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.532024,240,0.435753,0.621431,B0+B1,0.00408093,-0.0606216,0.0695225,t_mem+1000,gbt,settings,t_onset,on
+B0,r2,0.501159,240,0.425382,0.563901,B0+B1,0.195061,0.132214,0.257653,t_mem+1000,gbt,init,t_onset,on
+B0,spearman,0.705649,240,0.662604,0.747054,B0+B1,0.148754,0.096339,0.207301,t_mem+1000,gbt,init,t_onset,on
+B0,r2_within,-2.22045e-16,240,-2.22045e-16,2.22045e-16,B0+B1,-0.0374865,-0.15272,0.10614,t_mem+1000,gbt,init,t_onset,on
+B0+B1,r2,0.306098,240,0.222095,0.37523,,,,,t_mem+1000,gbt,init,t_onset,on
+B0+B1,spearman,0.556896,240,0.482369,0.619905,,,,,t_mem+1000,gbt,init,t_onset,on
+B0+B1,r2_within,0.0374865,240,-0.10614,0.15272,,,,,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C,r2,-0.309232,240,-0.509699,-0.150678,B0+B1,-0.61533,-0.75317,-0.501424,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C,spearman,0.362661,240,0.280246,0.441254,B0+B1,-0.194234,-0.247917,-0.139628,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C,r2_within,-0.208942,240,-0.438583,-0.0211922,B0+B1,-0.246429,-0.392593,-0.122015,t_mem+1000,gbt,init,t_onset,on
+C,r2,-0.0058062,240,-0.177405,0.128178,B0+B1,-0.311904,-0.474936,-0.171311,t_mem+1000,gbt,init,t_onset,on
+C,spearman,0.520091,240,0.442536,0.586214,B0+B1,-0.0368045,-0.119075,0.0453579,t_mem+1000,gbt,init,t_onset,on
+C,r2_within,-1.04164,240,-1.44586,-0.712227,B0+B1,-1.07913,-1.42013,-0.789805,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C(H only),r2,0.164801,240,0.0248293,0.277056,B0+B1,-0.141297,-0.22268,-0.0723277,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C(H only),spearman,0.565324,240,0.484649,0.639532,B0+B1,0.00842811,-0.0373559,0.0568947,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C(H only),r2_within,-0.20439,240,-0.446491,-0.00618463,B0+B1,-0.241877,-0.392712,-0.111033,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C(G only),r2,-0.269103,240,-0.458114,-0.118232,B0+B1,-0.575201,-0.701834,-0.470721,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C(G only),spearman,0.35006,240,0.270474,0.424446,B0+B1,-0.206836,-0.253678,-0.159572,t_mem+1000,gbt,init,t_onset,on
+B0+B1+C(G only),r2_within,-0.204159,240,-0.441789,-0.00329194,B0+B1,-0.241645,-0.385147,-0.11118,t_mem+1000,gbt,init,t_onset,on
+B0,r2,-0.776161,120,-1.11897,-0.525578,B0+B1,-0.444739,-0.699425,-0.209799,t_mem+1000,gbt,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.287136,-0.424861,-0.141781,t_mem+1000,gbt,wd_range,t_onset,on
+B0,r2_within,0,120,-2.22045e-16,2.22045e-16,B0+B1,-0.371142,-0.514397,-0.203502,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1,r2,-0.331422,120,-0.60889,-0.123078,,,,,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1,spearman,0.691762,120,0.593172,0.769957,,,,,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1,r2_within,0.371142,120,0.203502,0.514397,,,,,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C,r2,-0.616876,120,-0.9635,-0.365983,B0+B1,-0.285454,-0.441075,-0.150496,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C,spearman,0.657866,120,0.55149,0.747053,B0+B1,-0.0338964,-0.106318,0.0340802,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C,r2_within,0.356802,120,0.134926,0.539973,B0+B1,-0.01434,-0.15799,0.109319,t_mem+1000,gbt,wd_range,t_onset,on
+C,r2,-1.4984,120,-2.05603,-1.10144,B0+B1,-1.16698,-1.56713,-0.854285,t_mem+1000,gbt,wd_range,t_onset,on
+C,spearman,0.563769,120,0.448929,0.650458,B0+B1,-0.127994,-0.232925,-0.028974,t_mem+1000,gbt,wd_range,t_onset,on
+C,r2_within,0.0974243,120,-0.216031,0.342775,B0+B1,-0.273718,-0.508612,-0.0747886,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.451009,120,-0.791193,-0.222136,B0+B1,-0.119587,-0.270768,0.0215711,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.687767,120,0.586989,0.765948,B0+B1,-0.00399557,-0.0643159,0.056915,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.360405,120,0.128058,0.557735,B0+B1,-0.0107371,-0.148686,0.106756,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2,-0.439571,120,-0.750742,-0.219819,B0+B1,-0.108149,-0.22834,0.0122591,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.68087,120,0.579171,0.764217,B0+B1,-0.0108923,-0.0742342,0.0548924,t_mem+1000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.375099,120,0.158283,0.55332,B0+B1,0.00395646,-0.126243,0.124044,t_mem+1000,gbt,wd_range,t_onset,on
+B0,r2,0.677279,240,0.622336,0.723539,B0+B1,0.145082,0.0647006,0.224328,step 1000,ridge,settings,t_onset,on
+B0,spearman,0.82406,240,0.788849,0.856608,B0+B1,0.084817,0.0464458,0.127936,step 1000,ridge,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.294096,-0.403407,-0.17609,step 1000,ridge,settings,t_onset,on
+B0+B1,r2,0.532197,240,0.443939,0.61049,,,,,step 1000,ridge,settings,t_onset,on
+B0+B1,spearman,0.739243,240,0.691102,0.781828,,,,,step 1000,ridge,settings,t_onset,on
+B0+B1,r2_within,0.294096,240,0.17609,0.403407,,,,,step 1000,ridge,settings,t_onset,on
+B0+B1+C,r2,0.744486,240,0.698368,0.783319,B0+B1,0.212289,0.137746,0.286,step 1000,ridge,settings,t_onset,on
+B0+B1+C,spearman,0.872798,240,0.844128,0.897488,B0+B1,0.133554,0.0942264,0.172203,step 1000,ridge,settings,t_onset,on
+B0+B1+C,r2_within,0.254633,240,0.14018,0.356695,B0+B1,-0.0394631,-0.170438,0.0904963,step 1000,ridge,settings,t_onset,on
+C,r2,0.364412,240,0.263933,0.455787,B0+B1,-0.167785,-0.291804,-0.0486699,step 1000,ridge,settings,t_onset,on
+C,spearman,0.632277,240,0.559692,0.698951,B0+B1,-0.106966,-0.18475,-0.0337407,step 1000,ridge,settings,t_onset,on
+C,r2_within,-0.20392,240,-0.492947,0.0689415,B0+B1,-0.498015,-0.797719,-0.205978,step 1000,ridge,settings,t_onset,on
+B0+B1+C(H only),r2,0.738455,240,0.692501,0.778754,B0+B1,0.206258,0.135347,0.278186,step 1000,ridge,settings,t_onset,on
+B0+B1+C(H only),spearman,0.86807,240,0.83935,0.894118,B0+B1,0.128827,0.0896795,0.167045,step 1000,ridge,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.242258,240,0.137724,0.336948,B0+B1,-0.0518379,-0.177325,0.0719384,step 1000,ridge,settings,t_onset,on
+B0+B1+C(G only),r2,0.692474,240,0.588939,0.767579,B0+B1,0.160277,0.0496509,0.262041,step 1000,ridge,settings,t_onset,on
+B0+B1+C(G only),spearman,0.857326,240,0.812532,0.891832,B0+B1,0.118082,0.0719284,0.164269,step 1000,ridge,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.112907,240,-0.128585,0.311215,B0+B1,-0.181189,-0.413851,0.0170466,step 1000,ridge,settings,t_onset,on
+B0,r2,-0.879451,240,-1.15226,-0.673048,B0+B1,104.006,85.8208,127.353,step 1000,ridge,init,t_onset,on
+B0,spearman,0.125354,240,0.0699141,0.180846,B0+B1,0.336879,0.272663,0.400418,step 1000,ridge,init,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,79.328,60.5066,102.965,step 1000,ridge,init,t_onset,on
+B0+B1,r2,-104.885,240,-128.372,-86.4505,,,,,step 1000,ridge,init,t_onset,on
+B0+B1,spearman,-0.211525,240,-0.299812,-0.123675,,,,,step 1000,ridge,init,t_onset,on
+B0+B1,r2_within,-79.328,240,-102.965,-60.5066,,,,,step 1000,ridge,init,t_onset,on
+B0+B1+C,r2,-6.58945,240,-8.37188,-5.07263,B0+B1,98.2959,80.09,120.94,step 1000,ridge,init,t_onset,on
+B0+B1+C,spearman,0.109561,240,0.0176766,0.204257,B0+B1,0.321086,0.225632,0.415247,step 1000,ridge,init,t_onset,on
+B0+B1+C,r2_within,-8.63568,240,-11.3115,-6.56825,B0+B1,70.6923,52.5585,93.0399,step 1000,ridge,init,t_onset,on
+C,r2,-251.695,240,-324.793,-195.519,B0+B1,-146.809,-219.532,-84.4488,step 1000,ridge,init,t_onset,on
+C,spearman,0.302655,240,0.199811,0.405831,B0+B1,0.51418,0.385945,0.646512,step 1000,ridge,init,t_onset,on
+C,r2_within,-463.441,240,-591.445,-355.591,B0+B1,-384.113,-504.007,-280.836,step 1000,ridge,init,t_onset,on
+B0+B1+C(H only),r2,-29.8198,240,-37.7637,-23.5998,B0+B1,75.0656,58.776,93.8749,step 1000,ridge,init,t_onset,on
+B0+B1+C(H only),spearman,0.381539,240,0.290968,0.462924,B0+B1,0.593064,0.505796,0.673889,step 1000,ridge,init,t_onset,on
+B0+B1+C(H only),r2_within,-68.7824,240,-92.5808,-49.7815,B0+B1,10.5456,-9.48704,31.0933,step 1000,ridge,init,t_onset,on
+B0+B1+C(G only),r2,-49.6892,240,-60.896,-40.9211,B0+B1,55.1962,39.4719,73.6804,step 1000,ridge,init,t_onset,on
+B0+B1+C(G only),spearman,-0.126334,240,-0.218123,-0.0364199,B0+B1,0.0851904,0.011385,0.161431,step 1000,ridge,init,t_onset,on
+B0+B1+C(G only),r2_within,-44.5308,240,-58.3218,-33.1946,B0+B1,34.7972,18.2854,53.6011,step 1000,ridge,init,t_onset,on
+B0,r2,-0.711975,120,-1.03699,-0.476139,B0+B1,5.62487,4.14053,7.61495,step 1000,ridge,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.107022,-0.294672,0.0961051,step 1000,ridge,wd_range,t_onset,on
+B0,r2_within,0,120,0,0,B0+B1,0.651747,0.138415,1.33569,step 1000,ridge,wd_range,t_onset,on
+B0+B1,r2,-6.33684,120,-8.3578,-4.8427,,,,,step 1000,ridge,wd_range,t_onset,on
+B0+B1,spearman,0.511649,120,0.387434,0.619904,,,,,step 1000,ridge,wd_range,t_onset,on
+B0+B1,r2_within,-0.651747,120,-1.33569,-0.138415,,,,,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C,r2,-0.0683101,120,-0.241888,0.0563954,B0+B1,6.26853,4.7676,8.22757,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C,spearman,0.681655,120,0.593689,0.761106,B0+B1,0.170006,0.0183529,0.325742,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C,r2_within,0.233678,120,0.0937385,0.359672,B0+B1,0.885425,0.410489,1.54733,step 1000,ridge,wd_range,t_onset,on
+C,r2,-2.06838,120,-2.6561,-1.62397,B0+B1,4.26846,2.83221,6.10484,step 1000,ridge,wd_range,t_onset,on
+C,spearman,0.656845,120,0.554982,0.741491,B0+B1,0.145196,-0.0199354,0.309032,step 1000,ridge,wd_range,t_onset,on
+C,r2_within,0.189352,120,0.0420122,0.315973,B0+B1,0.841099,0.34741,1.49768,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.111854,120,-0.291516,0.0185633,B0+B1,6.22499,4.7353,8.17561,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.662824,120,0.566831,0.749266,B0+B1,0.151175,-0.00501856,0.310678,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.223229,120,0.0967255,0.337586,B0+B1,0.874976,0.382208,1.53456,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2,0.0368168,120,-0.140554,0.17012,B0+B1,6.37366,4.87381,8.31406,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.601532,120,0.486286,0.700555,B0+B1,0.089883,-0.0330336,0.221466,step 1000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.138218,120,-0.119223,0.352884,B0+B1,0.789965,0.335575,1.40504,step 1000,ridge,wd_range,t_onset,on
+B0,r2,0.632161,240,0.574272,0.682137,B0+B1,-0.158274,-0.213499,-0.107927,step 1000,gbt,settings,t_onset,on
+B0,spearman,0.790114,240,0.753983,0.824419,B0+B1,-0.0880582,-0.119368,-0.0546403,step 1000,gbt,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.504076,-0.584647,-0.416424,step 1000,gbt,settings,t_onset,on
+B0+B1,r2,0.790436,240,0.745029,0.827631,,,,,step 1000,gbt,settings,t_onset,on
+B0+B1,spearman,0.878172,240,0.841993,0.90638,,,,,step 1000,gbt,settings,t_onset,on
+B0+B1,r2_within,0.504076,240,0.416424,0.584647,,,,,step 1000,gbt,settings,t_onset,on
+B0+B1+C,r2,0.782181,240,0.737906,0.817776,B0+B1,-0.00825491,-0.0402704,0.0257827,step 1000,gbt,settings,t_onset,on
+B0+B1+C,spearman,0.880212,240,0.848487,0.905511,B0+B1,0.00204034,-0.0190831,0.0237487,step 1000,gbt,settings,t_onset,on
+B0+B1+C,r2_within,0.456298,240,0.362555,0.542062,B0+B1,-0.0477783,-0.131469,0.0354415,step 1000,gbt,settings,t_onset,on
+C,r2,0.610304,240,0.539434,0.675166,B0+B1,-0.180131,-0.251139,-0.11004,step 1000,gbt,settings,t_onset,on
+C,spearman,0.785538,240,0.73738,0.82705,B0+B1,-0.0926337,-0.140944,-0.0474517,step 1000,gbt,settings,t_onset,on
+C,r2_within,0.153762,240,-0.0524856,0.320231,B0+B1,-0.350314,-0.542728,-0.185025,step 1000,gbt,settings,t_onset,on
+B0+B1+C(H only),r2,0.804959,240,0.765821,0.836547,B0+B1,0.0145235,-0.0113562,0.0410562,step 1000,gbt,settings,t_onset,on
+B0+B1+C(H only),spearman,0.893025,240,0.862702,0.915811,B0+B1,0.0148533,-0.00302539,0.0339638,step 1000,gbt,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.499419,240,0.412,0.573796,B0+B1,-0.00465759,-0.0726034,0.0637828,step 1000,gbt,settings,t_onset,on
+B0+B1+C(G only),r2,0.797621,240,0.753428,0.832061,B0+B1,0.00718487,-0.0213825,0.0368865,step 1000,gbt,settings,t_onset,on
+B0+B1+C(G only),spearman,0.887375,240,0.857137,0.910256,B0+B1,0.00920324,-0.0100131,0.0284949,step 1000,gbt,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.499009,240,0.408738,0.57635,B0+B1,-0.00506768,-0.0800719,0.0646235,step 1000,gbt,settings,t_onset,on
+B0,r2,0.501159,240,0.425382,0.563901,B0+B1,0.462638,0.402719,0.518508,step 1000,gbt,init,t_onset,on
+B0,spearman,0.705649,240,0.662604,0.747054,B0+B1,0.408478,0.34359,0.470481,step 1000,gbt,init,t_onset,on
+B0,r2_within,-2.22045e-16,240,-2.22045e-16,2.22045e-16,B0+B1,0.00538455,-0.0459968,0.0634373,step 1000,gbt,init,t_onset,on
+B0+B1,r2,0.0385209,240,-0.0258427,0.093666,,,,,step 1000,gbt,init,t_onset,on
+B0+B1,spearman,0.297171,240,0.219234,0.373691,,,,,step 1000,gbt,init,t_onset,on
+B0+B1,r2_within,-0.00538455,240,-0.0634373,0.0459968,,,,,step 1000,gbt,init,t_onset,on
+B0+B1+C,r2,0.0631938,240,0.00360932,0.121174,B0+B1,0.0246729,-0.0498152,0.10593,step 1000,gbt,init,t_onset,on
+B0+B1+C,spearman,0.345167,240,0.252982,0.434163,B0+B1,0.0479953,-0.0358761,0.134371,step 1000,gbt,init,t_onset,on
+B0+B1+C,r2_within,-0.0507268,240,-0.196551,0.0687019,B0+B1,-0.0453423,-0.167702,0.0644862,step 1000,gbt,init,t_onset,on
+C,r2,-0.628641,240,-0.811666,-0.480303,B0+B1,-0.667162,-0.813335,-0.548419,step 1000,gbt,init,t_onset,on
+C,spearman,-0.0803306,240,-0.166233,0.00956417,B0+B1,-0.377502,-0.453324,-0.298473,step 1000,gbt,init,t_onset,on
+C,r2_within,-0.228281,240,-0.495266,-0.010962,B0+B1,-0.222896,-0.466881,-0.0180744,step 1000,gbt,init,t_onset,on
+B0+B1+C(H only),r2,-0.00277891,240,-0.0713717,0.0607053,B0+B1,-0.0412998,-0.123577,0.0462359,step 1000,gbt,init,t_onset,on
+B0+B1+C(H only),spearman,0.299295,240,0.198983,0.393834,B0+B1,0.00212357,-0.0898254,0.0939058,step 1000,gbt,init,t_onset,on
+B0+B1+C(H only),r2_within,-0.0713139,240,-0.230467,0.0602311,B0+B1,-0.0659294,-0.205681,0.0509761,step 1000,gbt,init,t_onset,on
+B0+B1+C(G only),r2,0.0632011,240,-0.00205083,0.119306,B0+B1,0.0246802,-0.0252257,0.0761692,step 1000,gbt,init,t_onset,on
+B0+B1+C(G only),spearman,0.296197,240,0.20752,0.380834,B0+B1,-0.000973871,-0.0694903,0.07037,step 1000,gbt,init,t_onset,on
+B0+B1+C(G only),r2_within,-0.0323057,240,-0.172958,0.0772667,B0+B1,-0.0269212,-0.141656,0.0706514,step 1000,gbt,init,t_onset,on
+B0,r2,-0.776161,120,-1.11897,-0.525578,B0+B1,-0.566349,-0.789063,-0.356616,step 1000,gbt,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.23429,-0.393016,-0.0666421,step 1000,gbt,wd_range,t_onset,on
+B0,r2_within,0,120,-2.22045e-16,2.22045e-16,B0+B1,-0.468194,-0.593467,-0.324098,step 1000,gbt,wd_range,t_onset,on
+B0+B1,r2,-0.209812,120,-0.443825,-0.036978,,,,,step 1000,gbt,wd_range,t_onset,on
+B0+B1,spearman,0.638917,120,0.514125,0.737631,,,,,step 1000,gbt,wd_range,t_onset,on
+B0+B1,r2_within,0.468194,120,0.324098,0.593467,,,,,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C,r2,-0.806759,120,-1.16278,-0.552272,B0+B1,-0.596947,-0.778998,-0.45086,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C,spearman,0.612949,120,0.496666,0.708864,B0+B1,-0.0259678,-0.104289,0.0532678,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C,r2_within,0.438182,120,0.306071,0.559341,B0+B1,-0.0300116,-0.122799,0.0615443,step 1000,gbt,wd_range,t_onset,on
+C,r2,-1.80995,120,-2.33485,-1.40273,B0+B1,-1.60014,-1.97437,-1.29832,step 1000,gbt,wd_range,t_onset,on
+C,spearman,0.575366,120,0.466353,0.662556,B0+B1,-0.0635505,-0.162729,0.0396217,step 1000,gbt,wd_range,t_onset,on
+C,r2_within,0.288991,120,0.0662092,0.451465,B0+B1,-0.179203,-0.384478,-0.0190601,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.627458,120,-0.93888,-0.409156,B0+B1,-0.417646,-0.549949,-0.308038,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.61906,120,0.495197,0.716059,B0+B1,-0.0198563,-0.105625,0.0671109,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.38718,120,0.247648,0.515219,B0+B1,-0.0810144,-0.162391,-0.00298566,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2,-0.827366,120,-1.184,-0.572495,B0+B1,-0.617554,-0.8178,-0.454148,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.618143,120,0.4964,0.716372,B0+B1,-0.0207735,-0.119976,0.0740138,step 1000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.409835,120,0.272478,0.535483,B0+B1,-0.0583594,-0.184037,0.0660251,step 1000,gbt,wd_range,t_onset,on
+B0,r2,0.677279,240,0.622336,0.723539,B0+B1,-0.0632135,-0.108731,-0.0160252,step 2000,ridge,settings,t_onset,on
+B0,spearman,0.82406,240,0.788849,0.856608,B0+B1,-0.0465541,-0.0701658,-0.0200855,step 2000,ridge,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.233605,-0.351851,-0.0973354,step 2000,ridge,settings,t_onset,on
+B0+B1,r2,0.740493,240,0.686346,0.786109,,,,,step 2000,ridge,settings,t_onset,on
+B0+B1,spearman,0.870614,240,0.837314,0.897759,,,,,step 2000,ridge,settings,t_onset,on
+B0+B1,r2_within,0.233605,240,0.0973354,0.351851,,,,,step 2000,ridge,settings,t_onset,on
+B0+B1+C,r2,0.750926,240,0.702386,0.794398,B0+B1,0.0104333,-0.0334741,0.0546298,step 2000,ridge,settings,t_onset,on
+B0+B1+C,spearman,0.888252,240,0.861236,0.909227,B0+B1,0.0176372,-0.000460647,0.0364774,step 2000,ridge,settings,t_onset,on
+B0+B1+C,r2_within,0.27562,240,0.150132,0.384863,B0+B1,0.0420151,-0.0846321,0.170392,step 2000,ridge,settings,t_onset,on
+C,r2,0.233251,240,0.111908,0.337454,B0+B1,-0.507242,-0.624699,-0.399083,step 2000,ridge,settings,t_onset,on
+C,spearman,0.63918,240,0.562633,0.710943,B0+B1,-0.231434,-0.308507,-0.157587,step 2000,ridge,settings,t_onset,on
+C,r2_within,-0.327535,240,-0.644666,-0.0433718,B0+B1,-0.56114,-0.870565,-0.289174,step 2000,ridge,settings,t_onset,on
+B0+B1+C(H only),r2,0.747029,240,0.699642,0.787822,B0+B1,0.00653605,-0.0281987,0.0448309,step 2000,ridge,settings,t_onset,on
+B0+B1+C(H only),spearman,0.877105,240,0.848451,0.90006,B0+B1,0.00649046,-0.0108613,0.0255402,step 2000,ridge,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.281775,240,0.181263,0.377883,B0+B1,0.0481701,-0.0538543,0.163982,step 2000,ridge,settings,t_onset,on
+B0+B1+C(G only),r2,0.763746,240,0.714209,0.805553,B0+B1,0.0232528,-0.015684,0.0612097,step 2000,ridge,settings,t_onset,on
+B0+B1+C(G only),spearman,0.88438,240,0.856105,0.907921,B0+B1,0.0137658,-0.00917242,0.0359761,step 2000,ridge,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.302302,240,0.16601,0.422264,B0+B1,0.0686975,-0.0647275,0.188926,step 2000,ridge,settings,t_onset,on
+B0,r2,-0.879451,240,-1.15226,-0.673048,B0+B1,46.1095,34.6855,60.4189,step 2000,ridge,init,t_onset,on
+B0,spearman,0.125354,240,0.0699141,0.180846,B0+B1,0.27243,0.154796,0.391488,step 2000,ridge,init,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,65.1532,48.3491,83.9159,step 2000,ridge,init,t_onset,on
+B0+B1,r2,-46.989,240,-61.419,-35.4594,,,,,step 2000,ridge,init,t_onset,on
+B0+B1,spearman,-0.147076,240,-0.247192,-0.0487376,,,,,step 2000,ridge,init,t_onset,on
+B0+B1,r2_within,-65.1532,240,-83.9159,-48.3491,,,,,step 2000,ridge,init,t_onset,on
+B0+B1+C,r2,-0.119696,240,-0.28156,0.0225558,B0+B1,46.8693,35.4663,61.2494,step 2000,ridge,init,t_onset,on
+B0+B1+C,spearman,0.398554,240,0.31073,0.485253,B0+B1,0.54563,0.453578,0.647854,step 2000,ridge,init,t_onset,on
+B0+B1+C,r2_within,-0.861473,240,-1.31193,-0.484259,B0+B1,64.2917,47.6691,82.8372,step 2000,ridge,init,t_onset,on
+C,r2,-1.31771,240,-1.73072,-0.971964,B0+B1,45.6713,34.2542,59.9701,step 2000,ridge,init,t_onset,on
+C,spearman,0.14495,240,0.0426544,0.244448,B0+B1,0.292026,0.190098,0.396175,step 2000,ridge,init,t_onset,on
+C,r2_within,-2.80453,240,-3.82822,-1.95639,B0+B1,62.3487,45.8622,80.7746,step 2000,ridge,init,t_onset,on
+B0+B1+C(H only),r2,-0.193155,240,-0.391675,-0.0220844,B0+B1,46.7958,35.3474,61.14,step 2000,ridge,init,t_onset,on
+B0+B1+C(H only),spearman,0.464878,240,0.380903,0.550306,B0+B1,0.611954,0.526263,0.704269,step 2000,ridge,init,t_onset,on
+B0+B1+C(H only),r2_within,-0.906011,240,-1.41154,-0.487788,B0+B1,64.2472,47.682,82.7615,step 2000,ridge,init,t_onset,on
+B0+B1+C(G only),r2,-11.1065,240,-15.0165,-7.88075,B0+B1,35.8825,25.9895,48.463,step 2000,ridge,init,t_onset,on
+B0+B1+C(G only),spearman,0.451329,240,0.365313,0.526573,B0+B1,0.598405,0.474523,0.718234,step 2000,ridge,init,t_onset,on
+B0+B1+C(G only),r2_within,-24.2527,240,-34.3604,-16.468,B0+B1,40.9005,24.3258,58.4465,step 2000,ridge,init,t_onset,on
+B0,r2,-0.711975,120,-1.03699,-0.476139,B0+B1,-0.549599,-0.74286,-0.388252,step 2000,ridge,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.132274,-0.231404,-0.0195879,step 2000,ridge,wd_range,t_onset,on
+B0,r2_within,0,120,0,0,B0+B1,0.045203,-0.127089,0.237674,step 2000,ridge,wd_range,t_onset,on
+B0+B1,r2,-0.162375,120,-0.428802,0.0465556,,,,,step 2000,ridge,wd_range,t_onset,on
+B0+B1,spearman,0.536901,120,0.409836,0.653443,,,,,step 2000,ridge,wd_range,t_onset,on
+B0+B1,r2_within,-0.045203,120,-0.237674,0.127089,,,,,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C,r2,-0.407459,120,-0.65561,-0.21925,B0+B1,-0.245084,-0.43061,-0.0661309,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C,spearman,0.561524,120,0.424542,0.685305,B0+B1,0.0246232,-0.0911542,0.143179,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C,r2_within,0.172625,120,0.0314161,0.299782,B0+B1,0.217828,0.079155,0.371408,step 2000,ridge,wd_range,t_onset,on
+C,r2,-3.02918,120,-3.82282,-2.42853,B0+B1,-2.86681,-3.55947,-2.33266,step 2000,ridge,wd_range,t_onset,on
+C,spearman,0.362829,120,0.23128,0.494525,B0+B1,-0.174072,-0.340432,0.023722,step 2000,ridge,wd_range,t_onset,on
+C,r2_within,-0.0837742,120,-0.333862,0.13293,B0+B1,-0.0385712,-0.344487,0.257044,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.418119,120,-0.677851,-0.219651,B0+B1,-0.255743,-0.407701,-0.110991,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.550885,120,0.415556,0.671474,B0+B1,0.0139845,-0.079615,0.104456,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.125484,120,-0.0144731,0.254561,B0+B1,0.170687,0.0521578,0.313376,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2,0.0454466,120,-0.238387,0.26346,B0+B1,0.207822,-0.0815788,0.46984,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.447525,120,0.299241,0.577113,B0+B1,-0.0893758,-0.222284,0.0379594,step 2000,ridge,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,-0.438621,120,-0.919579,-0.0852686,B0+B1,-0.393418,-0.814517,-0.0626186,step 2000,ridge,wd_range,t_onset,on
+B0,r2,0.632161,240,0.574272,0.682137,B0+B1,-0.170333,-0.221664,-0.122412,step 2000,gbt,settings,t_onset,on
+B0,spearman,0.790114,240,0.753983,0.824419,B0+B1,-0.100907,-0.130651,-0.0673577,step 2000,gbt,settings,t_onset,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.457882,-0.556697,-0.348089,step 2000,gbt,settings,t_onset,on
+B0+B1,r2,0.802494,240,0.75482,0.841748,,,,,step 2000,gbt,settings,t_onset,on
+B0+B1,spearman,0.891021,240,0.859386,0.915182,,,,,step 2000,gbt,settings,t_onset,on
+B0+B1,r2_within,0.457882,240,0.348089,0.556697,,,,,step 2000,gbt,settings,t_onset,on
+B0+B1+C,r2,0.777807,240,0.733366,0.814515,B0+B1,-0.0246867,-0.0484925,0.000761799,step 2000,gbt,settings,t_onset,on
+B0+B1+C,spearman,0.878321,240,0.844456,0.904119,B0+B1,-0.0127,-0.0304352,0.00470111,step 2000,gbt,settings,t_onset,on
+B0+B1+C,r2_within,0.397472,240,0.300831,0.48772,B0+B1,-0.0604092,-0.12993,0.0128857,step 2000,gbt,settings,t_onset,on
+C,r2,0.617105,240,0.529698,0.690785,B0+B1,-0.185389,-0.272363,-0.102197,step 2000,gbt,settings,t_onset,on
+C,spearman,0.792414,240,0.737999,0.839617,B0+B1,-0.0986071,-0.153152,-0.0476997,step 2000,gbt,settings,t_onset,on
+C,r2_within,0.0468711,240,-0.182687,0.245237,B0+B1,-0.411011,-0.646217,-0.191016,step 2000,gbt,settings,t_onset,on
+B0+B1+C(H only),r2,0.772943,240,0.72838,0.81021,B0+B1,-0.0295509,-0.0521778,-0.00511321,step 2000,gbt,settings,t_onset,on
+B0+B1+C(H only),spearman,0.879225,240,0.847408,0.904057,B0+B1,-0.0117958,-0.0282429,0.00525113,step 2000,gbt,settings,t_onset,on
+B0+B1+C(H only),r2_within,0.391082,240,0.285043,0.489109,B0+B1,-0.0667993,-0.138241,0.00625233,step 2000,gbt,settings,t_onset,on
+B0+B1+C(G only),r2,0.793815,240,0.75027,0.828425,B0+B1,-0.00867843,-0.0330375,0.0169698,step 2000,gbt,settings,t_onset,on
+B0+B1+C(G only),spearman,0.887604,240,0.854101,0.911705,B0+B1,-0.00341692,-0.0198974,0.0130267,step 2000,gbt,settings,t_onset,on
+B0+B1+C(G only),r2_within,0.447042,240,0.352156,0.5312,B0+B1,-0.0108401,-0.0796026,0.0598186,step 2000,gbt,settings,t_onset,on
+B0,r2,0.501159,240,0.425382,0.563901,B0+B1,0.310913,0.205302,0.411309,step 2000,gbt,init,t_onset,on
+B0,spearman,0.705649,240,0.662604,0.747054,B0+B1,0.253072,0.160727,0.350135,step 2000,gbt,init,t_onset,on
+B0,r2_within,-2.22045e-16,240,-2.22045e-16,2.22045e-16,B0+B1,-0.0231509,-0.102207,0.0706463,step 2000,gbt,init,t_onset,on
+B0+B1,r2,0.190246,240,0.117654,0.250795,,,,,step 2000,gbt,init,t_onset,on
+B0+B1,spearman,0.452577,240,0.38038,0.517482,,,,,step 2000,gbt,init,t_onset,on
+B0+B1,r2_within,0.0231509,240,-0.0706463,0.102207,,,,,step 2000,gbt,init,t_onset,on
+B0+B1+C,r2,0.0222876,240,-0.0668847,0.0986464,B0+B1,-0.167958,-0.247794,-0.0909997,step 2000,gbt,init,t_onset,on
+B0+B1+C,spearman,0.399229,240,0.31901,0.477256,B0+B1,-0.0533474,-0.113931,0.00212848,step 2000,gbt,init,t_onset,on
+B0+B1+C,r2_within,-0.116349,240,-0.307315,0.0436344,B0+B1,-0.1395,-0.29967,0.00115383,step 2000,gbt,init,t_onset,on
+C,r2,-0.494503,240,-0.667708,-0.348266,B0+B1,-0.684748,-0.863985,-0.522745,step 2000,gbt,init,t_onset,on
+C,spearman,0.00683167,240,-0.0949354,0.110581,B0+B1,-0.445745,-0.573247,-0.316529,step 2000,gbt,init,t_onset,on
+C,r2_within,-0.859917,240,-1.22302,-0.566606,B0+B1,-0.883068,-1.22983,-0.601948,step 2000,gbt,init,t_onset,on
+B0+B1+C(H only),r2,0.0213454,240,-0.0785779,0.112319,B0+B1,-0.1689,-0.246443,-0.0937586,step 2000,gbt,init,t_onset,on
+B0+B1+C(H only),spearman,0.442567,240,0.37375,0.505793,B0+B1,-0.0100095,-0.0505268,0.027347,step 2000,gbt,init,t_onset,on
+B0+B1+C(H only),r2_within,-0.0761204,240,-0.246475,0.0750984,B0+B1,-0.0992714,-0.239484,0.0321057,step 2000,gbt,init,t_onset,on
+B0+B1+C(G only),r2,0.113096,240,0.0332275,0.187747,B0+B1,-0.0771492,-0.143705,-0.0121234,step 2000,gbt,init,t_onset,on
+B0+B1+C(G only),spearman,0.436243,240,0.350523,0.512359,B0+B1,-0.0163334,-0.0697948,0.0342104,step 2000,gbt,init,t_onset,on
+B0+B1+C(G only),r2_within,-0.0172782,240,-0.169387,0.109812,B0+B1,-0.0404292,-0.160277,0.0676069,step 2000,gbt,init,t_onset,on
+B0,r2,-0.776161,120,-1.11897,-0.525578,B0+B1,-0.384129,-0.567453,-0.211893,step 2000,gbt,wd_range,t_onset,on
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.223391,-0.342159,-0.0970341,step 2000,gbt,wd_range,t_onset,on
+B0,r2_within,0,120,-2.22045e-16,2.22045e-16,B0+B1,-0.361664,-0.497104,-0.208989,step 2000,gbt,wd_range,t_onset,on
+B0+B1,r2,-0.392032,120,-0.682751,-0.175242,,,,,step 2000,gbt,wd_range,t_onset,on
+B0+B1,spearman,0.628017,120,0.506306,0.727718,,,,,step 2000,gbt,wd_range,t_onset,on
+B0+B1,r2_within,0.361664,120,0.208989,0.497104,,,,,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C,r2,-0.646987,120,-0.970154,-0.410719,B0+B1,-0.254955,-0.401184,-0.119343,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C,spearman,0.564648,120,0.427098,0.684046,B0+B1,-0.0633698,-0.1422,0.0187141,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C,r2_within,0.300415,120,0.137772,0.445518,B0+B1,-0.0612494,-0.171003,0.0408518,step 2000,gbt,wd_range,t_onset,on
+C,r2,-2.27306,120,-2.96615,-1.73875,B0+B1,-1.88102,-2.41259,-1.45952,step 2000,gbt,wd_range,t_onset,on
+C,spearman,0.327679,120,0.174657,0.467053,B0+B1,-0.300339,-0.431426,-0.174074,step 2000,gbt,wd_range,t_onset,on
+C,r2_within,-0.11631,120,-0.462785,0.164218,B0+B1,-0.477974,-0.80503,-0.212404,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2,-0.812064,120,-1.18983,-0.527753,B0+B1,-0.420032,-0.582866,-0.286849,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),spearman,0.555326,120,0.417694,0.674778,B0+B1,-0.0726917,-0.141622,0.00205544,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C(H only),r2_within,0.248806,120,0.0570103,0.415016,B0+B1,-0.112858,-0.222729,-0.00895179,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2,-0.61615,120,-0.950566,-0.37032,B0+B1,-0.224118,-0.353182,-0.113945,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),spearman,0.57383,120,0.428602,0.689439,B0+B1,-0.0541869,-0.126122,0.0144905,step 2000,gbt,wd_range,t_onset,on
+B0+B1+C(G only),r2_within,0.252506,120,0.0660129,0.409657,B0+B1,-0.109158,-0.202575,-0.0221207,step 2000,gbt,wd_range,t_onset,on
+B0,r2,0.554259,159,0.47043,0.61853,B0+B1,-0.217781,-0.288312,-0.143525,t_mem+500,ridge,settings,onset_2x_chance,on
+B0,spearman,0.788142,159,0.720173,0.844313,B0+B1,-0.0719364,-0.12368,-0.0159874,t_mem+500,ridge,settings,onset_2x_chance,on
+B0,r2_within,-2.22045e-16,159,-2.22045e-16,2.22045e-16,B0+B1,-0.582574,-0.688419,-0.451681,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1,r2,0.77204,159,0.693767,0.831519,,,,,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1,spearman,0.860078,159,0.800818,0.907308,,,,,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1,r2_within,0.582574,159,0.451681,0.688419,,,,,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C,r2,0.734941,159,0.650453,0.800128,B0+B1,-0.0370992,-0.082319,0.00645464,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C,spearman,0.849621,159,0.790814,0.895085,B0+B1,-0.0104573,-0.043217,0.0246166,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C,r2_within,0.458055,159,0.312899,0.574609,B0+B1,-0.124519,-0.211201,-0.041993,t_mem+500,ridge,settings,onset_2x_chance,on
+C,r2,0.312614,159,0.201192,0.409193,B0+B1,-0.459426,-0.571791,-0.351143,t_mem+500,ridge,settings,onset_2x_chance,on
+C,spearman,0.585001,159,0.485439,0.678889,B0+B1,-0.275077,-0.380229,-0.171388,t_mem+500,ridge,settings,onset_2x_chance,on
+C,r2_within,-0.185322,159,-0.354819,-0.0494692,B0+B1,-0.767895,-0.954207,-0.597138,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C(H only),r2,0.726048,159,0.639395,0.792958,B0+B1,-0.0459922,-0.0878549,-0.00485329,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C(H only),spearman,0.850947,159,0.788811,0.89905,B0+B1,-0.00913145,-0.0404801,0.0236412,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C(H only),r2_within,0.421606,159,0.269345,0.550141,B0+B1,-0.160967,-0.243655,-0.0795065,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C(G only),r2,0.72012,159,0.629627,0.790751,B0+B1,-0.0519203,-0.104389,-0.00282834,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C(G only),spearman,0.843277,159,0.785502,0.891321,B0+B1,-0.0168012,-0.0523828,0.0217842,t_mem+500,ridge,settings,onset_2x_chance,on
+B0+B1+C(G only),r2_within,0.415351,159,0.239968,0.544393,B0+B1,-0.167222,-0.268781,-0.0810785,t_mem+500,ridge,settings,onset_2x_chance,on
+B0,r2,0.541565,159,0.450653,0.602905,B0+B1,-0.202125,-0.265501,-0.141981,t_mem+500,gbt,settings,onset_2x_chance,on
+B0,spearman,0.76366,159,0.696123,0.819216,B0+B1,-0.0811784,-0.121756,-0.0317768,t_mem+500,gbt,settings,onset_2x_chance,on
+B0,r2_within,0,159,-2.22045e-16,2.22045e-16,B0+B1,-0.498179,-0.621514,-0.347998,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1,r2,0.74369,159,0.65941,0.811426,,,,,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1,spearman,0.844838,159,0.780311,0.894912,,,,,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1,r2_within,0.498179,159,0.347998,0.621514,,,,,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C,r2,0.784308,159,0.714472,0.840406,B0+B1,0.0406182,0.00478808,0.0825189,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C,spearman,0.878251,159,0.826741,0.914848,B0+B1,0.0334128,0.006061,0.0642165,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C,r2_within,0.577221,159,0.443442,0.693372,B0+B1,0.0790419,0.000927968,0.169575,t_mem+500,gbt,settings,onset_2x_chance,on
+C,r2,0.694612,159,0.603362,0.762076,B0+B1,-0.0490779,-0.137964,0.0397188,t_mem+500,gbt,settings,onset_2x_chance,on
+C,spearman,0.760617,159,0.689002,0.81934,B0+B1,-0.0842211,-0.150523,-0.0165975,t_mem+500,gbt,settings,onset_2x_chance,on
+C,r2_within,0.50828,159,0.363037,0.619178,B0+B1,0.0101012,-0.138135,0.159079,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C(H only),r2,0.765329,159,0.691032,0.824546,B0+B1,0.021639,-0.0143095,0.0632495,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C(H only),spearman,0.85669,159,0.797778,0.898558,B0+B1,0.0118518,-0.0167948,0.0409598,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C(H only),r2_within,0.551057,159,0.416207,0.665815,B0+B1,0.0528781,-0.0193008,0.134081,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C(G only),r2,0.767734,159,0.684791,0.831916,B0+B1,0.0240441,-0.00891737,0.0598978,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C(G only),spearman,0.856387,159,0.798693,0.901196,B0+B1,0.0115487,-0.011032,0.0349417,t_mem+500,gbt,settings,onset_2x_chance,on
+B0+B1+C(G only),r2_within,0.531607,159,0.37656,0.665828,B0+B1,0.0334278,-0.0493562,0.119969,t_mem+500,gbt,settings,onset_2x_chance,on
+B0,r2,0.630695,240,0.568614,0.68214,B0+B1,-0.0606839,-0.106035,-0.0187103,t_mem+500,ridge,settings,onset_logistic,on
+B0,spearman,0.794412,240,0.753364,0.832016,B0+B1,-0.045178,-0.0710959,-0.0159467,t_mem+500,ridge,settings,onset_logistic,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.176826,-0.278577,-0.0651557,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1,r2,0.691379,240,0.631162,0.742826,,,,,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1,spearman,0.83959,240,0.800441,0.872158,,,,,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1,r2_within,0.176826,240,0.0651557,0.278577,,,,,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C,r2,0.725799,240,0.676568,0.768347,B0+B1,0.0344204,0.00227647,0.0676336,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C,spearman,0.865387,240,0.83393,0.890595,B0+B1,0.0257965,0.005593,0.0474345,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C,r2_within,0.325251,240,0.217466,0.418055,B0+B1,0.148425,0.0704467,0.22089,t_mem+500,ridge,settings,onset_logistic,on
+C,r2,0.316204,240,0.225734,0.392459,B0+B1,-0.375175,-0.462447,-0.288009,t_mem+500,ridge,settings,onset_logistic,on
+C,spearman,0.61984,240,0.548853,0.683607,B0+B1,-0.21975,-0.289045,-0.153949,t_mem+500,ridge,settings,onset_logistic,on
+C,r2_within,-0.163052,240,-0.416093,0.0357231,B0+B1,-0.339878,-0.572464,-0.164219,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C(H only),r2,0.71292,240,0.659887,0.756837,B0+B1,0.0215414,-0.0094144,0.0535038,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C(H only),spearman,0.860261,240,0.828963,0.885761,B0+B1,0.0206705,0.00154371,0.0406948,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C(H only),r2_within,0.28455,240,0.176613,0.376637,B0+B1,0.107724,0.035777,0.174639,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C(G only),r2,0.74841,240,0.688929,0.796793,B0+B1,0.0570311,0.00864727,0.0988987,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C(G only),spearman,0.87459,240,0.839409,0.902263,B0+B1,0.0349997,0.00541965,0.0628969,t_mem+500,ridge,settings,onset_logistic,on
+B0+B1+C(G only),r2_within,0.361179,240,0.232363,0.471987,B0+B1,0.184353,0.0792419,0.281843,t_mem+500,ridge,settings,onset_logistic,on
+B0,r2,0.586697,240,0.517584,0.641932,B0+B1,-0.208573,-0.264124,-0.162899,t_mem+500,gbt,settings,onset_logistic,on
+B0,spearman,0.76515,240,0.722367,0.804934,B0+B1,-0.128418,-0.160571,-0.0958161,t_mem+500,gbt,settings,onset_logistic,on
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.509679,-0.601037,-0.417527,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1,r2,0.79527,240,0.748518,0.835825,,,,,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1,spearman,0.893568,240,0.862477,0.919603,,,,,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1,r2_within,0.509679,240,0.417527,0.601037,,,,,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C,r2,0.813709,240,0.772404,0.850288,B0+B1,0.0184387,-0.019311,0.0550468,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C,spearman,0.91012,240,0.884918,0.930564,B0+B1,0.0165515,-0.00795144,0.0393951,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C,r2_within,0.587685,240,0.502402,0.661899,B0+B1,0.0780052,-0.0102027,0.15793,t_mem+500,gbt,settings,onset_logistic,on
+C,r2,0.711271,240,0.657518,0.760208,B0+B1,-0.0839993,-0.145472,-0.0270212,t_mem+500,gbt,settings,onset_logistic,on
+C,spearman,0.847694,240,0.809049,0.878143,B0+B1,-0.0458741,-0.0850731,-0.00814779,t_mem+500,gbt,settings,onset_logistic,on
+C,r2_within,0.417305,240,0.260307,0.535129,B0+B1,-0.0923747,-0.24364,0.0405295,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C(H only),r2,0.818907,240,0.776166,0.855263,B0+B1,0.0236366,-0.0128844,0.0578819,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C(H only),spearman,0.911334,240,0.884374,0.932186,B0+B1,0.0177651,-0.00752307,0.0419035,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C(H only),r2_within,0.575109,240,0.478052,0.656107,B0+B1,0.0654296,-0.024229,0.147323,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C(G only),r2,0.81028,240,0.768032,0.846599,B0+B1,0.0150092,-0.0212291,0.0495957,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C(G only),spearman,0.905916,240,0.878006,0.927191,B0+B1,0.0123474,-0.0111042,0.0345514,t_mem+500,gbt,settings,onset_logistic,on
+B0+B1+C(G only),r2_within,0.578166,240,0.488197,0.653357,B0+B1,0.0684868,-0.0198739,0.146392,t_mem+500,gbt,settings,onset_logistic,on
+B0,r2,0.677637,240,0.62317,0.723386,B0+B1,-0.0504205,-0.0827694,-0.0199002,t_mem+500,ridge,settings,t_onset,off
+B0,spearman,0.82406,240,0.788849,0.856608,B0+B1,-0.0347092,-0.0524605,-0.0136704,t_mem+500,ridge,settings,t_onset,off
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.170447,-0.263432,-0.0757365,t_mem+500,ridge,settings,t_onset,off
+B0+B1,r2,0.728058,240,0.671969,0.776352,,,,,t_mem+500,ridge,settings,t_onset,off
+B0+B1,spearman,0.85877,240,0.822509,0.889334,,,,,t_mem+500,ridge,settings,t_onset,off
+B0+B1,r2_within,0.170447,240,0.0757365,0.263432,,,,,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C,r2,0.71842,240,0.648755,0.775533,B0+B1,-0.00963758,-0.0762379,0.04342,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C,spearman,0.867873,240,0.826536,0.900563,B0+B1,0.00910383,-0.0285156,0.0362774,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C,r2_within,0.204101,240,0.0389676,0.346882,B0+B1,0.0336544,-0.132415,0.162739,t_mem+500,ridge,settings,t_onset,off
+C,r2,0.200677,240,0.052659,0.315971,B0+B1,-0.527381,-0.678965,-0.401459,t_mem+500,ridge,settings,t_onset,off
+C,spearman,0.599724,240,0.524148,0.668853,B0+B1,-0.259045,-0.330537,-0.190285,t_mem+500,ridge,settings,t_onset,off
+C,r2_within,-0.628523,240,-1.12845,-0.218018,B0+B1,-0.79897,-1.29275,-0.38599,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C(H only),r2,0.708139,240,0.64249,0.762656,B0+B1,-0.019919,-0.0765989,0.0299788,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C(H only),spearman,0.863063,240,0.822449,0.895299,B0+B1,0.00429383,-0.032693,0.0314355,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C(H only),r2_within,0.164298,240,0.00629013,0.304016,B0+B1,-0.00614905,-0.156237,0.123867,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C(G only),r2,0.745309,240,0.660583,0.807138,B0+B1,0.0172516,-0.0621793,0.0734543,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C(G only),spearman,0.879743,240,0.838434,0.911472,B0+B1,0.0209734,-0.0173036,0.0486698,t_mem+500,ridge,settings,t_onset,off
+B0+B1+C(G only),r2_within,0.271219,240,0.0872815,0.427297,B0+B1,0.100772,-0.0795989,0.247863,t_mem+500,ridge,settings,t_onset,off
+B0,r2,0.295289,120,0.0692771,0.462196,B0+B1,1.19336,0.870766,1.61485,t_mem+500,ridge,wd_range,t_onset,off
+B0,spearman,0.608485,120,0.497869,0.711867,B0+B1,-0.0464282,-0.113116,0.0191089,t_mem+500,ridge,wd_range,t_onset,off
+B0,r2_within,0,120,-2.22045e-16,2.22045e-16,B0+B1,-0.0790842,-0.240363,0.0960619,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1,r2,-0.898076,120,-1.49815,-0.469915,,,,,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1,spearman,0.654913,120,0.545459,0.74491,,,,,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1,r2_within,0.0790842,120,-0.0960619,0.240363,,,,,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C,r2,-0.184832,120,-0.571917,0.081147,B0+B1,0.713244,0.47721,1.01506,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C,spearman,0.701261,120,0.606614,0.778876,B0+B1,0.0463487,-0.00818983,0.101788,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C,r2_within,0.288093,120,0.11858,0.448256,B0+B1,0.209009,0.0837542,0.338912,t_mem+500,ridge,wd_range,t_onset,off
+C,r2,-2.5098,120,-3.18255,-2.01338,B0+B1,-1.61172,-2.35909,-0.910797,t_mem+500,ridge,wd_range,t_onset,off
+C,spearman,0.494121,120,0.347406,0.618994,B0+B1,-0.160792,-0.320605,-0.0125821,t_mem+500,ridge,wd_range,t_onset,off
+C,r2_within,0.144817,120,-0.0340359,0.294279,B0+B1,0.0657327,-0.107033,0.232925,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C(H only),r2,-0.299582,120,-0.71722,-0.00186835,B0+B1,0.598494,0.421583,0.827141,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C(H only),spearman,0.676075,120,0.575165,0.758208,B0+B1,0.0211626,-0.0249681,0.0672666,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C(H only),r2_within,0.251706,120,0.1106,0.387765,B0+B1,0.172622,0.0787057,0.267267,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C(G only),r2,-1.05102,120,-1.66319,-0.580551,B0+B1,-0.152945,-0.4057,0.11072,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C(G only),spearman,0.722129,120,0.625816,0.803234,B0+B1,0.067216,0.0159446,0.120634,t_mem+500,ridge,wd_range,t_onset,off
+B0+B1+C(G only),r2_within,0.0835224,120,-0.196805,0.336384,B0+B1,0.00443822,-0.198327,0.203737,t_mem+500,ridge,wd_range,t_onset,off
+B0,r2,0.632161,240,0.574272,0.682137,B0+B1,-0.167735,-0.215856,-0.124689,t_mem+500,gbt,settings,t_onset,off
+B0,spearman,0.790114,240,0.753983,0.824419,B0+B1,-0.107642,-0.133365,-0.0795264,t_mem+500,gbt,settings,t_onset,off
+B0,r2_within,0,240,-2.22045e-16,2.22045e-16,B0+B1,-0.477019,-0.579752,-0.376325,t_mem+500,gbt,settings,t_onset,off
+B0+B1,r2,0.799896,240,0.752799,0.840091,,,,,t_mem+500,gbt,settings,t_onset,off
+B0+B1,spearman,0.897755,240,0.868263,0.921072,,,,,t_mem+500,gbt,settings,t_onset,off
+B0+B1,r2_within,0.477019,240,0.376325,0.579752,,,,,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C,r2,0.835402,240,0.798844,0.865706,B0+B1,0.0355051,0.00102848,0.072056,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C,spearman,0.916341,240,0.893497,0.93423,B0+B1,0.0185853,-0.000915227,0.0395752,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C,r2_within,0.596945,240,0.522076,0.662429,B0+B1,0.119927,0.0213227,0.215554,t_mem+500,gbt,settings,t_onset,off
+C,r2,0.696553,240,0.639204,0.744602,B0+B1,-0.103344,-0.167914,-0.0428259,t_mem+500,gbt,settings,t_onset,off
+C,spearman,0.847597,240,0.811725,0.876185,B0+B1,-0.0501581,-0.0868018,-0.0155887,t_mem+500,gbt,settings,t_onset,off
+C,r2_within,0.31392,240,0.146079,0.44967,B0+B1,-0.163099,-0.347913,0.00385309,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C(H only),r2,0.840714,240,0.807998,0.868366,B0+B1,0.0408176,0.0083078,0.0748007,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C(H only),spearman,0.918723,240,0.896455,0.935828,B0+B1,0.0209682,0.000809385,0.0412647,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C(H only),r2_within,0.599432,240,0.525989,0.666416,B0+B1,0.122413,0.0305629,0.210604,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C(G only),r2,0.837794,240,0.802586,0.866309,B0+B1,0.0378976,0.00721738,0.0699078,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C(G only),spearman,0.917222,240,0.893592,0.934689,B0+B1,0.0194666,0.00200956,0.0372154,t_mem+500,gbt,settings,t_onset,off
+B0+B1+C(G only),r2_within,0.610076,240,0.537684,0.67306,B0+B1,0.133058,0.0450027,0.221301,t_mem+500,gbt,settings,t_onset,off
+B0,r2,-0.776161,120,-1.11897,-0.525578,B0+B1,-0.404079,-0.615732,-0.205796,t_mem+500,gbt,wd_range,t_onset,off
+B0,spearman,0.404627,120,0.27493,0.543131,B0+B1,-0.272338,-0.405906,-0.141767,t_mem+500,gbt,wd_range,t_onset,off
+B0,r2_within,0,120,-2.22045e-16,2.22045e-16,B0+B1,-0.392121,-0.505958,-0.25719,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1,r2,-0.372083,120,-0.653508,-0.176344,,,,,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1,spearman,0.676965,120,0.564985,0.759145,,,,,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1,r2_within,0.392121,120,0.25719,0.505958,,,,,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C,r2,-0.443704,120,-0.721719,-0.234091,B0+B1,-0.0716211,-0.22351,0.0769111,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C,spearman,0.672285,120,0.565761,0.755071,B0+B1,-0.00468003,-0.0813783,0.079691,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C,r2_within,0.326056,120,0.139733,0.482902,B0+B1,-0.0660654,-0.191387,0.0494854,t_mem+500,gbt,wd_range,t_onset,off
+C,r2,-1.10515,120,-1.55053,-0.756828,B0+B1,-0.73307,-1.0427,-0.4652,t_mem+500,gbt,wd_range,t_onset,off
+C,spearman,0.641988,120,0.544725,0.722728,B0+B1,-0.0349769,-0.140922,0.0679456,t_mem+500,gbt,wd_range,t_onset,off
+C,r2_within,0.138433,120,-0.121272,0.337376,B0+B1,-0.253688,-0.466288,-0.0795997,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C(H only),r2,-0.361951,120,-0.6165,-0.172751,B0+B1,0.0101323,-0.123904,0.143106,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C(H only),spearman,0.669825,120,0.55421,0.761075,B0+B1,-0.00713992,-0.0812674,0.0729096,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C(H only),r2_within,0.352558,120,0.170403,0.513142,B0+B1,-0.0395627,-0.170687,0.0835571,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C(G only),r2,-0.646898,120,-0.960203,-0.417703,B0+B1,-0.274816,-0.419691,-0.145092,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C(G only),spearman,0.67849,120,0.57141,0.759582,B0+B1,0.00152527,-0.0785895,0.0752858,t_mem+500,gbt,wd_range,t_onset,off
+B0+B1+C(G only),r2_within,0.398255,120,0.23585,0.534461,B0+B1,0.00613394,-0.0970648,0.110777,t_mem+500,gbt,wd_range,t_onset,off

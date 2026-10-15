@@ -46,3 +46,6 @@ results/
 # Local mirror backup of the GitHub repo
 eg-mirror.git/
 
+
+# Paper drafts are kept out of the repo for now
+paper/

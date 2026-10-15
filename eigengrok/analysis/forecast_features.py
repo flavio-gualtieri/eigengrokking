@@ -2,7 +2,9 @@
 
 """
 Phase 3 feature table: one row per run, every indicator trajectory
-summarised only up to a cutoff step, and the target log(t_onset).
+summarised only up to a cutoff step, and the target y = ln(onset). The onset
+is t_onset (primary) or, for sensitivity analysis, one of the secondary
+definitions onset_2x_chance / onset_logistic (eigengrok/analysis/milestones.py).
 
 Cutoffs (`Cutoff`): t_mem + offset steps ("after_mem"), or a fixed step
 ("absolute"). Nothing after the cutoff is read. A run whose onset is already
@@ -40,10 +42,13 @@ import numpy as np
 import pandas as pd
 
 from eigengrok.analysis.checkpoint_grid import log_grid
+from eigengrok.analysis.milestones import onset_2x_chance, onset_logistic
 from eigengrok.analysis.milestones import t_mem as milestone_t_mem
 from eigengrok.analysis.milestones import t_onset as milestone_t_onset
 
 RUN = ["init", "wd", "seed"]
+TARGETS = ("t_onset", "onset_2x_chance", "onset_logistic")
+DEFAULT_MODULUS = 91
 SWEEP_CHECKPOINT_STEPS = [1] + list(range(100, 150_001, 100))  # every run of the sweep saves these
 SWEEP_LOG_GRID = log_grid(SWEEP_CHECKPOINT_STEPS)              # ...and keeps these, at identical steps
 
@@ -107,26 +112,34 @@ def summarise(steps: np.ndarray, values: np.ndarray, *, name: str, cutoff: float
             "change_since_mem": v[-1] - ref}
 
 
-def run_targets(curves: pd.DataFrame) -> pd.DataFrame:
-    """t_mem, t_onset and the target y = ln(t_onset), one row per run."""
+def run_targets(curves: pd.DataFrame, target: str = "t_onset") -> pd.DataFrame:
+    """t_mem, every onset definition in TARGETS, and y = ln(`target`), one row per run."""
+    if target not in TARGETS:
+        raise ValueError(f"Unknown target {target!r}; options: {TARGETS}")
     rows = []
     for key, g in curves.groupby(RUN, sort=True):
         g = g.sort_values("step")
-        rows.append({**dict(zip(RUN, key)), "t_mem": milestone_t_mem(g["step"], g["train_accuracy"]),
-                     "t_onset": milestone_t_onset(g["step"], g["test_accuracy"])})
+        modulus = int(g["modulus"].iloc[0]) if "modulus" in g else DEFAULT_MODULUS
+        steps, test = g["step"].to_numpy(), g["test_accuracy"].to_numpy()
+        cross = onset_2x_chance(steps, test, modulus)
+        rows.append({**dict(zip(RUN, key)), "t_mem": milestone_t_mem(steps, g["train_accuracy"]),
+                     "t_onset": milestone_t_onset(steps, test), "onset_2x_chance": cross,
+                     "onset_logistic": onset_logistic(steps, test, init_step=cross).fit_step if target == "onset_logistic"
+                     else np.nan})
     out = pd.DataFrame(rows)
-    out["y"] = np.log(out["t_onset"])
+    out["y"] = np.log(out[target])
     return out
 
 
-def build_features(curves: pd.DataFrame, spectra: pd.DataFrame | None, cutoff: Cutoff) -> pd.DataFrame:
+def build_features(curves: pd.DataFrame, spectra: pd.DataFrame | None, cutoff: Cutoff,
+                   target: str = "t_onset") -> pd.DataFrame:
     """
     One row per run with RUN keys, t_mem, t_onset, y, cutoff_step and the
     feature columns "<family>:<indicator>:<summary>" (B0 columns are
     "B0:<name>"). Runs already past onset at the cutoff are dropped; their
     count is in attrs["n_dropped"].
     """
-    targets = run_targets(curves)
+    targets = run_targets(curves, target)
     curves_by_run = dict(tuple(curves.groupby(RUN, sort=False)))
     spectra_by_run = dict(tuple(spectra.groupby(RUN, sort=False))) if spectra is not None and len(spectra) else {}
     grid = np.array(SWEEP_LOG_GRID)
@@ -136,12 +149,13 @@ def build_features(curves: pd.DataFrame, spectra: pd.DataFrame | None, cutoff: C
         key = tuple(t[k] for k in RUN)
         mem = t["t_mem"] if np.isfinite(t["t_mem"]) else np.inf
         cut = cutoff.step(mem) if cutoff.kind == "absolute" or np.isfinite(mem) else np.nan
-        if not np.isfinite(cut) or not np.isfinite(t["t_onset"]) or t["t_onset"] <= cut:
+        if not np.isfinite(cut) or not np.isfinite(t[target]) or t[target] <= cut:
             dropped += 1
             continue
         mem_seen = min(mem, cut)
         log2_init = np.log2(t["init"])
-        row = {**dict(zip(RUN, key)), "t_mem": t["t_mem"], "t_onset": t["t_onset"], "y": t["y"], "cutoff_step": cut,
+        row = {**dict(zip(RUN, key)), "t_mem": t["t_mem"], "t_onset": t["t_onset"], "target": target,
+               "target_step": t[target], "y": t["y"], "cutoff_step": cut,
                "B0:wd": t["wd"], "B0:wd2": t["wd"] ** 2, "B0:log2_init": log2_init,
                "B0:wd_x_log2_init": t["wd"] * log2_init,
                "B1:t_mem": np.log(mem_seen), "B1:memorized_by_cutoff": float(mem <= cut)}
@@ -164,7 +178,7 @@ def build_features(curves: pd.DataFrame, spectra: pd.DataFrame | None, cutoff: C
         rows.append(row)
 
     table = pd.DataFrame(rows)
-    table.attrs.update(cutoff=cutoff.label, n_dropped=dropped, n_runs=len(targets))
+    table.attrs.update(cutoff=cutoff.label, target=target, n_dropped=dropped, n_runs=len(targets))
     return table
 
 

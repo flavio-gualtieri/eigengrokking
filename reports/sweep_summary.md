@@ -75,7 +75,7 @@ Means [95% CI]. Final test accuracy is at the last logged step. Collapses: test-
 
 ## Init scale: init 8 against init 1 (baseline) at the same weight decay
 
-Ratio of init-8 to init-1 `t_onset`, 10 seeds each side, [95% CI] from resampling both sides independently:
+Ratio of init-8 to init-1 `t_onset` [95% CI, resampling both sides independently]. Only the 12 weight decays present at both init scales are compared or pooled.
 
 | wd | ratio of means | ratio of medians |
 |---|---|---|

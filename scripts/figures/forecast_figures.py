@@ -34,7 +34,9 @@ INCREMENTS = [  # (label, feature set whose delta vs B0+B1 is used, sign, colour
     ("curvature H only over B0+B1", "B0+B1+C(H only)", 1, "#009E73", "^"),
     ("curvature G only over B0+B1", "B0+B1+C(G only)", 1, "#CC79A7", "D"),
 ]
-SPLITS = ("settings", "init", "wd_range")
+# The init-scale split is left out: trained on one init scale, no model transfers to the other (every
+# R^2 is far below zero; reports/forecast_summary.md has the numbers), so its intervals would swamp the axes.
+SPLITS = ("settings", "wd_range")
 SPLIT_LABELS = {"settings": "leave one\nsetting out", "init": "leave one\ninit scale out", "wd_range": "train wd <= 0.7,\ntest wd > 0.7"}
 INK = "#333333"
 
@@ -73,7 +75,8 @@ def increments(results: pd.DataFrame, cutoff: str, model: str, stem: Path) -> No
         ax.set_ylabel("gain (95% CI)")
         ax.grid(True, axis="y", alpha=0.25)
     axes[0].legend(fontsize=7.5, loc="best", frameon=False)
-    fig.suptitle(f"What each indicator family adds, ridge, cutoff {cutoff}", fontsize=11, x=0.01, ha="left")
+    fig.suptitle(f"What each indicator family adds, ridge, cutoff {cutoff} (init-scale split omitted: no model "
+                 "transfers across init scales)", fontsize=10.5, x=0.01, ha="left")
     fig.tight_layout()
     _save(fig, stem)
 
@@ -93,7 +96,9 @@ def pred_vs_actual(preds: pd.DataFrame, stem: Path) -> None:
                             edgecolors=INK, linewidths=0.3, label=f"init {init:g}")
         ax.plot(lim, lim, color=INK, linewidth=0.8, linestyle="--")
         ax.set_xlim(lim); ax.set_ylim(lim)
-        ax.set_xlabel("actual ln(t_onset)"); ax.set_ylabel("predicted (out of fold)")
+        ax.set_xlabel("actual ln(t_onset)")
+        if ax is axes[0][0]:
+            ax.set_ylabel("predicted (out of fold)")
         ax.set_title(col.removeprefix("pred:"), fontsize=10)
         ax.legend(fontsize=8, loc="upper left", frameon=False)
         ax.grid(True, alpha=0.2)

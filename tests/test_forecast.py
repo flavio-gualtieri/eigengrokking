@@ -121,3 +121,26 @@ def test_splits_keep_settings_apart(signal_table):
         for train, test in split_folds(signal_table, split):
             key = signal_table["init"].astype(str) + "/" + signal_table["wd"].astype(str)
             assert not set(key.iloc[train]) & set(key.iloc[test]), split
+
+
+def test_secondary_targets():
+    curves, spectra = _sweep(signal=True)
+    curves = curves.copy()
+    curves.loc[(curves["step"] == 100) & (curves["seed"] == 0), "test_accuracy"] = 0.05  # an early blip above 2/p
+    cut = Cutoff("after_mem", 500)
+    primary = build_features(curves, spectra, cut)
+    cross = build_features(curves, spectra, cut, target="onset_2x_chance")
+    # The blip puts seed 0's 2x-chance onset at step 100, before the cutoff: those runs are dropped.
+    assert len(cross) == len(primary) - len(INITS) * len(WDS)
+    assert (cross["target"] == "onset_2x_chance").all() and np.allclose(cross["y"], np.log(cross["target_step"]))
+    with pytest.raises(ValueError):
+        build_features(curves, spectra, cut, target="halfway")
+
+
+def test_test_features_are_clipped_to_the_training_range():
+    from eigengrok.analysis.forecast_eval import clip_to_training_range
+    X_train = np.array([[0.0, 1.0], [2.0, np.nan], [1.0, 3.0]])
+    X_test = np.array([[-5.0, 10.0], [1.5, np.nan]])
+    out = clip_to_training_range(X_train, X_test)
+    assert out[0].tolist() == [0.0, 3.0] and out[1, 0] == 1.5 and np.isnan(out[1, 1])
+    assert np.array_equal(clip_to_training_range(np.full((3, 1), np.nan), np.array([[7.0]])), [[7.0]])

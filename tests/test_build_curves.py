@@ -65,3 +65,17 @@ def test_existing_output_never_loses_runs(tmp_path):
 
     assert build.write_guarded(out, build.ACCURACY_COLUMNS, acc_rows, allow_fewer_runs=True)
     assert len(_read(out)) == 3
+
+
+def test_gzip_output_is_deterministic_and_guarded(tmp_path):
+    results = tmp_path / "results"
+    _fake_run(results, 0, grad_norms=True)
+    acc_rows, _ = build.collect(results)
+    a = tmp_path / "a.csv.gz"
+    build.write_guarded(a, build.ACCURACY_COLUMNS, acc_rows, allow_fewer_runs=False)
+    first = a.read_bytes()
+    build.write_guarded(a, build.ACCURACY_COLUMNS, acc_rows, allow_fewer_runs=False)
+    assert a.read_bytes() == first  # fixed gzip timestamp: re-extracting the same data changes nothing
+    import pandas as pd
+    assert len(pd.read_csv(a)) == 3
+    assert not build.write_guarded(a, build.ACCURACY_COLUMNS, [], allow_fewer_runs=False)  # would lose the run
