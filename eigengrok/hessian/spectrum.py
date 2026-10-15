@@ -80,6 +80,16 @@ class SpectralQuadrature:
         return SpectralQuadrature([self.nodes[i]], [self.weights[i]], self.n_params)
 
 
+def exact_quadrature(eigenvalues) -> SpectralQuadrature:
+    """
+    The exact spectral measure of a materialised matrix, as a single "probe"
+    with weight 1/P on every eigenvalue, so spectral_stats of it gives the
+    exact value of every statistic (the reference SLQ is validated against).
+    """
+    lam = np.asarray(eigenvalues, dtype=np.float64)
+    return SpectralQuadrature([lam], [np.full(lam.size, 1.0 / lam.size)], lam.size)
+
+
 def slq(matvec: MatVec, n_params: int, *, k: int, m: int, seed: int,
         device: torch.device, dtype: torch.dtype, probe_batch: int | None = None) -> SpectralQuadrature:
     """

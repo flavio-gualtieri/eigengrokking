@@ -50,6 +50,23 @@ class HessianSnapshot:
     density: np.ndarray  # plotting only
 
 
+OPERATORS = {"hessian": "hvp", "gauss_newton": "gauss_newton", "functional": "functional"}
+
+
+def operator_stats(
+        ops: CurvatureOperators,
+        operator: str,
+        *,
+        m: int,
+        k: int,
+        probe_seed: int,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """SLQ statistics (point estimate, stderr over probes) of one curvature operator of `ops`."""
+    matvec = getattr(ops, OPERATORS[operator])
+    q = slq(matvec, ops.n_params, k=k, m=m, seed=probe_seed, device=ops.theta.device, dtype=ops.theta.dtype)
+    return spectral_stats_with_stderr(q)
+
+
 def hessian_snapshot(
         model: nn.Module,
         x: torch.Tensor,
