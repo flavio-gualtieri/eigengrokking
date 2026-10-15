@@ -6,14 +6,15 @@ Flattens every run's logged training curves under results/ into two
 long-format CSVs, one row per (run, logged step):
 
     --out        train/test accuracy and loss       (reports/wd_sweep_accuracy_curves.csv)
-    --norms-out  total weight norm, last-layer norm,
-                 and gradient norm where logged     (reports/wd_sweep_norms.csv)
+    --norms-out  total weight norm, last-layer norm, and where logged:
+                 gradient norm, update norm, max |logit|,
+                 softmax-saturated fraction          (reports/wd_sweep_norms.csv)
 
 `results/` itself is gitignored (raw per-run checkpoints/figures, ~tens of
 GB) -- this script is how the wd-sweep's actual signal gets preserved in the
 repo without the raw run directories. modulus/depth/width/init/wd/seed
-identify the run. grad_norm is empty for runs trained before the loop logged
-it (eigengrok/train/loop.py).
+identify the run. Columns the training loop didn't log yet when a run was
+trained (eigengrok/train/loop.py) are empty for that run.
 
 Files under results/ have been disappearing (a scratch-filesystem purge), so
 an output that already exists is never overwritten with fewer runs than it
@@ -39,7 +40,9 @@ RUN_DIR_RE = re.compile(
 )
 RUN_COLUMNS = ["modulus", "depth", "width", "init", "wd", "seed"]
 ACCURACY_COLUMNS = RUN_COLUMNS + ["step", "train_accuracy", "test_accuracy", "train_loss", "test_loss"]
-NORM_COLUMNS = RUN_COLUMNS + ["step", "norm", "last_layer_norm", "grad_norm"]
+OPTIONAL_KEYS = {"grad_norms": "grad_norm", "update_norms": "update_norm",  # npz key -> column; absent in older runs
+                 "max_abs_logits": "max_abs_logit", "frac_saturated": "frac_saturated"}
+NORM_COLUMNS = RUN_COLUMNS + ["step", "norm", "last_layer_norm", *OPTIONAL_KEYS.values()]
 
 
 def _iter_runs(results_dir: Path):
@@ -76,7 +79,7 @@ def collect(results_dir: Path) -> tuple[list[list], list[list]]:
             test_loss = data["test_losses"]
             norms = data["norms"]
             ll_norms = data["last_layer_norms"]
-            grad_norms = data["grad_norms"] if "grad_norms" in data.files and len(data["grad_norms"]) else None
+            optional = {col: data[key] for key, col in OPTIONAL_KEYS.items() if key in data.files and len(data[key])}
 
         run = [meta[c] for c in RUN_COLUMNS]
         for i in range(len(steps)):
@@ -86,15 +89,13 @@ def collect(results_dir: Path) -> tuple[list[list], list[list]]:
                 float(train_loss[i]), float(test_loss[i]),
             ])
 
-        aligned = len(norms) == len(ll_norms) == len(steps) and (grad_norms is None or len(grad_norms) == len(steps))
+        aligned = len(norms) == len(ll_norms) == len(steps) and all(len(v) == len(steps) for v in optional.values())
         if not aligned:
             print(f"Skipping norms (not on the train_steps grid): {npz_path}")
             continue
         for i in range(len(steps)):
-            norm_rows.append(run + [
-                int(steps[i]), _f32(norms[i]), _f32(ll_norms[i]),
-                "" if grad_norms is None else _f32(grad_norms[i]),
-            ])
+            norm_rows.append(run + [int(steps[i]), _f32(norms[i]), _f32(ll_norms[i])]
+                             + ["" if col not in optional else _f32(optional[col][i]) for col in OPTIONAL_KEYS.values()])
     return accuracy_rows, norm_rows
 
 
