@@ -10,8 +10,8 @@ sweep's spectra (scripts/run_spectral_sweep_array.sh):
     reports/figures/forecast_increments.{png,pdf}   (i) gain in R^2 and R^2 within settings from each
                                                     indicator family, per split, with 95% CIs
     reports/figures/forecast_pred_vs_actual.{png,pdf}  (ii) predicted vs actual ln(t_onset), coloured by wd
-    reports/figures/forecast_trajectory.{png,pdf}   (iii) one run's curvature aligned to its onset, with the
-                                                    median and interquartile band over its setting's seeds
+    reports/figures/forecast_trajectory.{png,pdf}   (iii) curvature aligned to each run's onset: median and
+                                                    interquartile band over one setting's seeds
 
 Figures needing curvature are skipped (with a message) until the spectra exist.
 """
@@ -113,7 +113,6 @@ def trajectory(spectra: pd.DataFrame, preds: pd.DataFrame, stem: Path, *, init: 
     if runs.empty or sp.empty:
         print(f"Skipping the trajectory figure: no spectra for init={init:g}, wd={wd:g} yet")
         return
-    rep = runs.iloc[(runs["t_onset"] - runs["t_onset"].median()).abs().argmin()]  # the median-onset seed
     panels = [("top_eig", "H top eigenvalue"), ("effective_rank", "H effective rank"),
               ("gn_top_eig", "G top eigenvalue"), ("gn_effective_rank", "G effective rank")]
     grid = np.logspace(np.log10(0.05), np.log10(3), 60)  # step / t_onset
@@ -130,18 +129,16 @@ def trajectory(spectra: pd.DataFrame, preds: pd.DataFrame, stem: Path, *, init: 
         ax.fill_between(grid, np.exp(q[0]), np.exp(q[2]), color="#0072B2", alpha=0.2, linewidth=0,
                         label=f"interquartile band, {len(curves)} seeds")
         ax.plot(grid, np.exp(q[1]), color="#0072B2", linewidth=1.2, label="median over seeds")
-        g = sp[sp["seed"] == rep["seed"]].sort_values("step")
-        ax.errorbar(g["step"] / rep["t_onset"], g[col], yerr=g.get(f"{col}_stderr"), color="#D55E00", linewidth=1,
-                    marker="o", markersize=2.5, capsize=1.5, errorevery=max(1, len(g) // 25),
-                    label=f"seed {int(rep['seed'])} (stderr over probes)")
-        ax.axvline(1, color=INK, linewidth=0.8, linestyle="--")
+        ax.axvline(1, color=INK, linewidth=0.9, linestyle="--",
+                   label="grokking onset (first step with test accuracy >= 50%)")
         ax.set_xscale("log"); ax.set_yscale("log")
         ax.set_title(title, fontsize=10)
         ax.grid(True, alpha=0.2)
     for ax in axes[-1]:
-        ax.set_xlabel("step / t_onset")
-    axes[0, 0].legend(fontsize=7.5, frameon=False)
-    fig.suptitle(f"Curvature around onset, init={init:g}, wd={wd:g}", fontsize=11, x=0.01, ha="left")
+        ax.set_xlabel("training step / that run's onset step (1 = onset)")
+    axes[0, 0].legend(fontsize=7.5, frameon=False, loc="lower right")
+    fig.suptitle(f"Hessian (H) and Gauss-Newton (G) curvature around grokking, init scale {init:g}, weight decay {wd:g}",
+                 fontsize=11, x=0.01, ha="left")
     fig.tight_layout()
     _save(fig, stem)
 
