@@ -1,7 +1,8 @@
 #!/bin/bash
 # Everything after the GPU jobs, on one CPU node: extract the rerun's curves,
 # summarise the rerun and compare it with the original sweep, run the
-# forecasting audit (with the spectra), draw its figures, and regenerate
+# forecasting audit (with the spectra), time each indicator's change against
+# the transition, draw the figures, and regenerate
 # paper/numbers.tex and RESULTS.md. Writes into the repo's reports/,
 # paper/ and RESULTS.md; commits nothing.
 #
@@ -44,6 +45,7 @@ step "extract curves" build_wd_sweep_accuracy_csv.py results/sweep_beta2_0.98 \
 step "rerun summary" sweep_summary.py --accuracy-csv reports/sweep_beta2_0.98_accuracy_curves.csv.gz --out-dir reports/sweep_beta2_0.98
 step "compare sweeps" compare_sweeps.py
 step "forecast audit" forecast_benchmark.py
+step "transition lead times" transition_leadtimes.py
 step "figures" figures/forecast_figures.py
 step "numbers" make_numbers.py
 
