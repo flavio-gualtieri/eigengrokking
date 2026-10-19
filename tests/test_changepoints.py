@@ -11,6 +11,7 @@ import pytest
 from eigengrok.analysis.changepoints import (
     REFERENCE,
     changepoint_table,
+    despike,
     fit_changepoint,
     running_median,
     segmentations,
@@ -33,6 +34,18 @@ def test_running_median_removes_spikes_up_to_two_wide_including_at_the_ends():
 def test_running_median_keeps_a_step_that_lasts():
     v = np.r_[np.zeros(6), np.ones(6)]
     assert np.allclose(running_median(v, 5), v)
+
+
+def test_despike_removes_spikes_and_leaves_points_away_from_them_as_measured():
+    rng = np.random.default_rng(3)
+    clean = np.linspace(0, 1, 40) + rng.normal(0, 0.01, 40)
+    spikes = [0, 17, 18, 39]
+    v = clean.copy()
+    v[spikes] += 5.0
+    out = despike(v)
+    assert np.all(np.abs(out - clean) < 0.1)  # spikes gone; their neighbours move by about one step of the trend
+    far = [i for i in range(40) if min(abs(i - j) for j in spikes) > 2]
+    assert np.array_equal(out[far], v[far])
 
 
 def test_segmentation_is_exact_on_a_noiseless_piecewise_line():
