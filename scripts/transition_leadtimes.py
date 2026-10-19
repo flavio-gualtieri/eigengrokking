@@ -52,7 +52,7 @@ VARIANTS = {  # name -> keyword arguments of changepoint_table; one knob changed
     "spike filter 3 wide": {"despike_width": 3},
     "no spike filter": {"despike_width": 1},
     "episode fraction 1/2": {"fraction": 1 / 2},
-    "BIC margin 40": {"min_delta_bic": 40},
+    "BIC margin 30": {"min_delta_bic": 30},
     "up to 7 pieces": {"max_segments": 7},
     "steepest fall only": {"direction": -1},
 }
@@ -211,7 +211,7 @@ def markdown(summary: pd.DataFrame, ref: dict, n_runs: int) -> str:
          f"{cp.HAMPEL_SIGMAS:g} robust SDs from their {cp.DESPIKE}-point running median), the series is split "
          f"into at most {cp.MAX_SEGMENTS} linear pieces by exact least squares, with the number of pieces chosen by "
          f"BIC; a change is called if that beats a single line by >= {cp.MIN_DELTA_BIC} in BIC (calibrated by "
-         "simulation: a straight line plus white or heavy-tailed noise clears it in about 5% of draws). The "
+         "simulation: a straight line plus white or heavy-tailed noise clears it in at most 3% of draws). The "
          "**changepoint** "
          "is where the series' steepest episode starts: the piece with the steepest net slope, extended backwards "
          f"over adjacent pieces moving the same way at >= {cp.STEEP_FRACTION:.2g} of that slope.", "",

@@ -15,8 +15,8 @@ training set.
 
 We find that curvature-based indicators improve the prediction only slightly over a baseline that uses the
 hyperparameters and a few cheap training statistics (training loss, weight norms, gradient norm). The clearest
-curvature signal, a sharp drop in effective rank, starts at the same checkpoint as the transition (when test loss
-starts to fall off its plateau), not before it, so it is not an early warning sign.
+curvature signal, a sharp drop in effective rank, starts together with the transition (when test loss starts to fall
+off its plateau), not ahead of it, so it is not an early warning sign.
 
 We track two curvature matrices: the full Hessian H, and its Gauss-Newton part G, which keeps only the curvature of
 the loss with respect to the network's outputs (treating the network as locally linear). The remainder H - G comes from
@@ -59,23 +59,25 @@ times the grokking step ([details](reports/transition_leadtimes.md)).
 
 | Indicator | Median lead [95% CI] | Runs where it changes first |
 |---|---|---|
-| Effective rank, H | +0.00 [+0.00, +0.04] | 49% |
-| Effective rank, G | +0.00 [-0.03, +0.03] | 47% |
-| Outlier count, H | +0.17 [+0.12, +0.20] | 73% |
-| Outlier count, G | +0.19 [+0.16, +0.24] | 76% |
-| Top eigenvalue, H | -0.13 [-0.18, -0.06] | 35% |
-| Trace, H | -0.14 [-0.21, -0.07] | 36% |
-| Training loss | -0.10 [-0.13, -0.05] | 36% |
-| Gradient norm | -0.08 [-0.13, -0.04] | 33% |
+| Effective rank, H | +0.04 [+0.01, +0.06] | 57% |
+| Effective rank, G | +0.00 [-0.02, +0.03] | 50% |
+| Outlier count, H | +0.18 [+0.15, +0.21] | 73% |
+| Outlier count, G | +0.22 [+0.18, +0.25] | 79% |
+| Top eigenvalue, H | -0.15 [-0.18, -0.11] | 32% |
+| Trace, H | -0.13 [-0.18, -0.07] | 34% |
+| Training loss | -0.10 [-0.13, -0.06] | 35% |
+| Gradient norm | -0.04 [-0.10, +0.03] | 44% |
 
-The effective-rank collapse starts at the same checkpoint as the test loss drop in the median run, and first in about
-half the runs. Individual runs scatter widely (for H, the middle half of lead times runs from -0.11 to +0.19), partly because
-a single changepoint is imprecise: H and G effective rank move together, yet their changepoints in the same run differ
-by a median 0.06. The number of outlier eigenvalues (those separated from the bulk of the spectrum) is the one
-curvature statistic that consistently changes earlier, but this analysis looks back from each run's known grokking
-step, so it describes the transition and does not forecast it. The top eigenvalue, the trace and the cheap statistics
-change after the transition has started; the weight norm (not shown) falls steadily throughout and has no change tied
-to the transition.
+The effective-rank collapse starts at the same checkpoint as the test loss drop for G, and slightly ahead of it for H
+(a median 4% of the grokking step, about 200 steps); each changes first in about half the runs. Individual runs scatter
+widely (for H, the middle half of lead times runs from -0.09 to +0.26), partly because a single changepoint is
+imprecise: H and G effective rank move together, yet their changepoints in the same run differ by a median 0.09. The
+number of outlier eigenvalues (those separated from the bulk of the spectrum) is the one curvature statistic that
+consistently changes earlier, by about a fifth of the grokking step. But this analysis looks back from each run's
+known grokking step, so it describes the transition and does not forecast it. The top eigenvalue, the trace and the
+training loss change after the transition has started. The gradient norm changes detectably in only a third of runs,
+and then around the transition start. The weight norm (not shown) falls steadily throughout and has no change tied to
+the transition.
 
 ![Lead time of each indicator](reports/figures/transition_leadtimes.png)
 

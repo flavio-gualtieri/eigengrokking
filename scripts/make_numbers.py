@@ -308,7 +308,7 @@ def transition_timing() -> list[Claim]:
               "t_onset ({TransRefBeforeOnsetSteps} steps) before onset.",
               script, data, pick("TransRefBeforeOnset")),
         Claim(section,
-              "The effective-rank collapse starts at the transition start: median lead {LeadEffRankH} x t_onset "
+              "The effective-rank collapse starts at or just before the transition start: median lead {LeadEffRankH} x t_onset "
               "[{LeadEffRankHLo}, {LeadEffRankHHi}] for H (interquartile {LeadEffRankHQOne} to {LeadEffRankHQThree}) and "
               "{LeadEffRankG} [{LeadEffRankGLo}, {LeadEffRankGHi}] for G ({LeadEffRankGQOne} to {LeadEffRankGQThree}); "
               "it changes first in {LeadEffRankHFirst} (H) and {LeadEffRankGFirst} (G) of runs. H and G changepoints in "
@@ -323,8 +323,9 @@ def transition_timing() -> list[Claim]:
         Claim(section,
               "Later than the transition start: H top eigenvalue {LeadTopEigH} [{LeadTopEigHLo}, {LeadTopEigHHi}] (first "
               "in {LeadTopEigHFirst} of runs), H trace {LeadTraceH} [{LeadTraceHLo}, {LeadTraceHHi}] ({LeadTraceHFirst}), "
-              "training loss {LeadTrainLoss} [{LeadTrainLossLo}, {LeadTrainLossHi}] ({LeadTrainLossFirst}), gradient "
-              "norm {LeadGradNorm} [{LeadGradNormLo}, {LeadGradNormHi}] ({LeadGradNormFirst}).",
+              "training loss {LeadTrainLoss} [{LeadTrainLossLo}, {LeadTrainLossHi}] ({LeadTrainLossFirst}). The gradient "
+              "norm, where it changes at all, does so around the transition start: {LeadGradNorm} [{LeadGradNormLo}, "
+              "{LeadGradNormHi}] ({LeadGradNormFirst}).",
               script, data, pick("LeadTopEig", "LeadTrace", "LeadTrainLoss", "LeadGradNorm")),
     ]
 

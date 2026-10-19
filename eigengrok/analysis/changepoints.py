@@ -12,9 +12,10 @@ eigengrok/analysis/checkpoint_grid.py):
 
   1. transform the values as the forecast features do (log, log1p or asinh;
      eigengrok/analysis/forecast_features.py) and remove spikes with a
-     Hampel filter: a point more than HAMPEL_SIGMAS robust standard
-     deviations from its DESPIKE-point running median is replaced by that
-     median. That removes spikes up to two checkpoints wide (SLQ outliers,
+     Hampel filter: a point more than HAMPEL_SIGMAS noise SDs from its
+     DESPIKE-point running median is replaced by that median, the noise SD
+     estimated robustly from second differences so a trend does not count
+     as noise. That removes spikes up to two checkpoints wide (SLQ outliers,
      which can repeat at neighbouring checkpoints because a run reuses its
      probes at every checkpoint; train-loss blips) and keeps any change that
      lasts 3+ checkpoints. Every other point stays as measured: smoothing
@@ -69,10 +70,11 @@ DESPIKE = 5          # running-median width of the spike filter, in checkpoints
 HAMPEL_SIGMAS = 3.0  # a point this many robust SDs from its running median is a spike
 MAX_SEGMENTS = 5
 MIN_SEGMENT = 3      # points per linear piece
-# BIC improvement over a single line needed to call a change. Calibrated by simulation, not the textbook 10: a
-# straight line plus white or heavy-tailed (Student t, 3 dof) noise, spike-filtered like the data, clears 10 in up to
-# 15% of draws at 30-150 points (BIC under-counts the freedom of searching over split points) and 20 in about 5%.
-MIN_DELTA_BIC = 20
+# BIC improvement over a single line needed to call a change ("very strong" evidence). Checked by simulation: a
+# straight line plus white or heavy-tailed (Student t, 3 dof) noise, spike-filtered like the data, clears it in at most
+# ~3% of draws at 30-150 points. Errors correlated between neighbouring checkpoints would clear it more often, so the
+# report also runs a stricter margin.
+MIN_DELTA_BIC = 10
 STEEP_FRACTION = 1 / 3  # an adjacent piece joins the steepest episode if it moves the same way at least this fast
 
 REFERENCE = "test_loss"
@@ -109,19 +111,30 @@ def running_median(v: np.ndarray, width: int = DESPIKE) -> np.ndarray:
     return np.median(np.lib.stride_tricks.sliding_window_view(padded, 2 * half + 1), axis=1)
 
 
+def noise_scale(v: np.ndarray) -> float:
+    """
+    Robust SD of the point-to-point noise: 1.4826 x the median absolute
+    deviation of the second differences, / sqrt(6) (their SD for white noise).
+    Second differences cancel any locally linear trend, and a spike moves
+    only three of them.
+    """
+    d2 = np.diff(np.asarray(v, dtype=float), 2)
+    if d2.size == 0:
+        return 0.0
+    return float(1.4826 * np.median(np.abs(d2 - np.median(d2))) / np.sqrt(6))
+
+
 def despike(v: np.ndarray, width: int = DESPIKE, sigmas: float = HAMPEL_SIGMAS) -> np.ndarray:
     """
-    Hampel filter: points more than `sigmas` robust SDs (1.4826 x the median
-    absolute deviation from the running median, over the whole series) from
-    their `width`-point running median are replaced by it; the rest are kept.
+    Hampel filter: points more than `sigmas` x noise_scale(v) from their
+    `width`-point running median are replaced by it; the rest are kept.
     """
     v = np.asarray(v, dtype=float)
     med = running_median(v, width)
-    resid = v - med
-    scale = 1.4826 * np.median(np.abs(resid - np.median(resid)))
+    scale = noise_scale(v)
     if not scale > 0:
-        return med
-    return np.where(np.abs(resid) > sigmas * scale, med, v)
+        return v.copy()
+    return np.where(np.abs(v - med) > sigmas * scale, med, v)
 
 
 def _line_rss(x: np.ndarray, y: np.ndarray) -> np.ndarray:
