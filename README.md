@@ -1,4 +1,4 @@
-# eigengrok
+# eigengrokking
 
 Grokking is a form of delayed generalization in neural networks, first reported by
 [Power et al. (2022)](https://arxiv.org/abs/2201.02177). The network quickly memorizes its training data (training
